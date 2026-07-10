@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Source/" />
+  <Folder Name="/Source/Core/">
+    <Project Path="Application/RealStateApp.Core.Application.csproj" />
+    <Project Path="RealStateApp.Core.Domain/RealStateApp.Core.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Source/Infrastructure/">
+    <Project Path="Persistance/Persistance.csproj" />
+  </Folder>
+  <Folder Name="/Source/Presentation/" />
+  <Folder Name="/Source/Presentation/WebApp/">
+    <Project Path="RealStateApp/RealStateApp.csproj" />
+  </Folder>
+</Solution>
