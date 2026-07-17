@@ -1,4 +1,4 @@
-﻿namespace RealEstateApp.Core.Domain.Enums;
+﻿namespace RealStateApp.Core.Domain.Enums;
 
 public enum EstadoPropiedad
 {

@@ -7,14 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Dtos\" />
-    <Folder Include="ViewModels\" />
-    <Folder Include="Servicies\" />
+    <PackageReference Include="AutoMapper" Version="16.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.17" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.17" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.17" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.17" />
+    <ProjectReference Include="..\RealStateApp.Core.Domain\RealStateApp.Core.Domain.csproj" />
   </ItemGroup>
 
 </Project>

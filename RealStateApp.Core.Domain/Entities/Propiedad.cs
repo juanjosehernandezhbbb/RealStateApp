@@ -1,4 +1,4 @@
-﻿using RealEstateApp.Core.Domain.Enums;
+﻿using RealStateApp.Core.Domain.Enums;
 using RealStateApp.Core.Domain.Common;
 using System;
 using System.Collections.Generic;

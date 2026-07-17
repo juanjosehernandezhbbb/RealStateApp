@@ -5,9 +5,12 @@
     <Project Path="RealStateApp.Core.Domain/RealStateApp.Core.Domain.csproj" />
   </Folder>
   <Folder Name="/Source/Infrastructure/">
-    <Project Path="Persistance/Persistance.csproj" />
+    <Project Path="Persistance/RealStateApp.Persistance.csproj" />
   </Folder>
   <Folder Name="/Source/Presentation/" />
+  <Folder Name="/Source/Presentation/WebAPI/">
+    <Project Path="WebApi/WebApi.csproj" Id="e96b2455-e74c-438c-b83a-41495deb6fdc" />
+  </Folder>
   <Folder Name="/Source/Presentation/WebApp/">
     <Project Path="RealStateApp/RealStateApp.csproj" />
   </Folder>
