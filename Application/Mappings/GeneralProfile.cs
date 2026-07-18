@@ -81,7 +81,11 @@ namespace RealStateApp.Core.Application.Mappings
             #endregion
 
             #region Favoritos
-            CreateMap<Favorito, FavoritoDTO>().ReverseMap();
+            CreateMap<Favorito, FavoritoDTO>()
+                .ForMember(dest => dest.Propiedad, opt => opt.MapFrom(src => src.Favorita))
+                .ReverseMap()
+                .ForMember(dest => dest.Favorita, opt => opt.Ignore());
+
             CreateMap<SaveFavoritoDTO, Favorito>().ReverseMap();
             #endregion
 

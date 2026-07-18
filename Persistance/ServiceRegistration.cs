@@ -33,7 +33,7 @@ namespace RealStateApp.Persistance
                 options.Lockout.AllowedForNewUsers = true;
 
                 options.User.RequireUniqueEmail = true;
-                options.SignIn.RequireConfirmedAccount = true;
+                options.SignIn.RequireConfirmedAccount = false;
             })
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
@@ -41,6 +41,15 @@ namespace RealStateApp.Persistance
             #region Repositories
             services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             #endregion
+
+            services.AddTransient<IPropiedadRepository, PropiedadRepository>();
+            services.AddTransient<IFavoritoRepository, FavoritoRepository>();
+            services.AddTransient<IOfertaRepository, OfertaRepository>();
+            services.AddTransient<IMensajeRepository, MensajeRepository>();
+            services.AddTransient<IMejoraRepository, MejoraRepository>();
+            services.AddTransient<ITipoPropiedadRepository, TipoPropiedadRepository>();
+            services.AddTransient<ITipoVentaRepository, TipoVentaRepository>();
+
         }
     }
 }

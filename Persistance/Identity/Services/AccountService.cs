@@ -1,18 +1,17 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using RealStateApp.Core.Application.DTOs.Account;
 using RealStateApp.Core.Application.DTOs.Usuarios;
+using RealStateApp.Core.Application.Interfaces.Repositories;
 using RealStateApp.Core.Application.Interfaces.Services;
+using RealStateApp.Core.Application.Settings;
 using RealStateApp.Core.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using RealStateApp.Core.Application.Settings;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace RealStateApp.Persistance.Identity.Services
 {
@@ -22,17 +21,20 @@ namespace RealStateApp.Persistance.Identity.Services
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IEmailService _emailService;
         private readonly JWTSettings _jwtSettings;
+        private readonly IPropiedadRepository _propiedadRepository;
 
         public AccountService(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             IEmailService emailService,
-            IOptions<JWTSettings> jwtSettings)
+            IOptions<JWTSettings> jwtSettings,
+            IPropiedadRepository propiedadRepository)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _emailService = emailService;
             _jwtSettings = jwtSettings.Value;
+            _propiedadRepository = propiedadRepository;
         }
 
         public async Task<AuthenticationResponse> AuthenticateAsync(AuthenticationRequest request)
@@ -49,7 +51,6 @@ namespace RealStateApp.Persistance.Identity.Services
             }
 
             var result = await _signInManager.PasswordSignInAsync(user.UserName, request.Password, false, lockoutOnFailure: false);
-
             if (!result.Succeeded)
             {
                 response.HasError = true;
@@ -65,36 +66,31 @@ namespace RealStateApp.Persistance.Identity.Services
             }
 
             var rolesList = await _userManager.GetRolesAsync(user);
-
             response.Id = user.Id;
             response.Email = user.Email;
             response.UserName = user.UserName;
             response.Roles = rolesList.ToList();
             response.IsActive = user.EstaActivo;
 
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            byte[] key = Encoding.ASCII.GetBytes(_jwtSettings.Key);
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var key = System.Text.Encoding.ASCII.GetBytes(_jwtSettings.Key);
+            var claims = new List<System.Security.Claims.Claim>
+    {
+        new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.UserName),
+        new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email),
+        new System.Security.Claims.Claim("uid", user.Id)
+    };
 
-            List<Claim> claims = new List<Claim>
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim("uid", user.Id)
-            };
+            foreach (var role in rolesList) claims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, role));
 
-            foreach (var role in rolesList)
+            var tokenDescriptor = new Microsoft.IdentityModel.Tokens.SecurityTokenDescriptor
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
+                Subject = new System.Security.Claims.ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
                 Issuer = _jwtSettings.Issuer,
                 Audience = _jwtSettings.Audience,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                SigningCredentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(key), Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -105,77 +101,152 @@ namespace RealStateApp.Persistance.Identity.Services
 
         public async Task<string> RegisterUserAsync(SaveUsuarioDTO request, string origin)
         {
-            var userWithSameEmail = await _userManager.FindByEmailAsync(request.Email);
-            if (userWithSameEmail != null)
-                return "Ya existe un usuario registrado con este correo electrónico.";
-
-            var userWithSameUserName = await _userManager.FindByNameAsync(request.UserName);
-            if (userWithSameUserName != null)
-                return "Ya existe un usuario registrado con este nombre de usuario.";
-
-            bool isActivo = request.Rol == "Administrador" || request.Rol == "Desarrollador";
+            if (await _userManager.Users.AnyAsync(u => u.Cedula == request.Cedula))
+                return "Ya existe un usuario registrado con esta cédula.";
 
             var user = new ApplicationUser
             {
-                Email = request.Email,
                 UserName = request.UserName,
+                Email = request.Email,
                 Nombre = request.Nombre,
                 Apellido = request.Apellido,
-                Telefono = request.Telefono,
                 Cedula = request.Cedula,
-                FotoPerfilUrl = request.FotoPerfilUrl,
-                EstaActivo = isActivo,
-                FechaRegistro = DateTime.Now
+                Telefono = request.Telefono,
+                FotoPerfilUrl = request.FotoPerfilUrl, 
+                FechaRegistro = DateTime.Now,          
+
+                EstaActivo = request.Rol == "Administrador" || request.Rol == "Desarrollador"
             };
-
             var result = await _userManager.CreateAsync(user, request.Password);
-            if (!result.Succeeded)
-                return "Ocurrió un error al registrar el usuario.";
-
-            await _userManager.AddToRoleAsync(user, request.Rol);
-
-            if (request.Rol == "Cliente")
-            {
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var verificationUri = $"{origin}/User/ConfirmEmail?userId={user.Id}&token={token}";
-
-                string body = $"Hola {user.Nombre}, <br/><br/> Su cuenta ha sido registrada correctamente en RealEstateApp.<br/>" +
-                              $"Para activar su usuario y poder iniciar sesión, utilice el siguiente enlace: <br/>" +
-                              $"<a href='{verificationUri}'>Activar Cuenta</a>";
-
-                await _emailService.SendAsync(user.Email, "Activación de cuenta en RealEstateApp", body);
-            }
-
-            return "Success";
-        }
-
-        public async Task<string> ConfirmAccountAsync(string userId, string token)
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return "Usuario no encontrado.";
-
-            token = token.Replace(" ", "+");
-            var result = await _userManager.ConfirmEmailAsync(user, token);
-
             if (result.Succeeded)
             {
-                user.EstaActivo = true;
-                await _userManager.UpdateAsync(user);
+                await _userManager.AddToRoleAsync(user, request.Rol);
+
+                if (request.Rol == "Cliente")
+                {
+                    var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                    await _emailService.SendAsync(
+                        user.Email,
+                        "Confirmación de Cuenta",
+                        $"Su cuenta ha sido creada. Utilice el siguiente token para confirmarla: {token}");
+                }
+
                 return "Success";
             }
-
-            return "Ocurrió un error confirmando la cuenta.";
+            return result.Errors.FirstOrDefault()?.Description;
         }
 
-        public async Task SignOutAsync()
+        public async Task<List<UsuarioDTO>> GetAllUsersAsync()
         {
-            await _signInManager.SignOutAsync();
+            var users = await _userManager.Users.ToListAsync();
+            var propiedades = await _propiedadRepository.GetAllAsync();
+            var userDTOs = new List<UsuarioDTO>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                var dto = new UsuarioDTO
+                {
+                    Id = user.Id,
+                    Nombre = user.Nombre,
+                    Apellido = user.Apellido,
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    Cedula = user.Cedula,
+                    Telefono = user.Telefono,
+                    FotoPerfilUrl = user.FotoPerfilUrl,
+                    EstaActivo = user.EstaActivo,
+                    Roles = roles.ToList()
+                };
+
+                if (roles.Contains("Agente"))
+                    dto.CantidadPropiedades = propiedades.Count(p => p.AgenteId == user.Id);
+
+                userDTOs.Add(dto);
+            }
+            return userDTOs;
         }
 
-        public Task<List<UsuarioDTO>> GetAllUsersAsync() => throw new NotImplementedException();
-        public Task<UsuarioDTO> GetUserByIdAsync(string id) => throw new NotImplementedException();
-        public Task UpdateUserAsync(SaveUsuarioDTO request) => throw new NotImplementedException();
-        public Task ChangeUserStatusAsync(string userId, bool status) => throw new NotImplementedException();
-        public Task DeleteUserAsync(string userId) => throw new NotImplementedException();
+        public async Task<UsuarioDTO> GetUserByIdAsync(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return null;
+
+            var roles = await _userManager.GetRolesAsync(user);
+            return new UsuarioDTO
+            {
+                Id = user.Id,
+                Nombre = user.Nombre,
+                Apellido = user.Apellido,
+                Email = user.Email,
+                UserName = user.UserName,
+                Cedula = user.Cedula,
+                Telefono = user.Telefono,
+                FotoPerfilUrl = user.FotoPerfilUrl,
+                EstaActivo = user.EstaActivo,
+                Roles = roles.ToList()
+            };
+        }
+
+        public async Task UpdateUserAsync(SaveUsuarioDTO request)
+        {
+            var user = await _userManager.FindByIdAsync(request.Id);
+            if (user == null) throw new Exception("Usuario no encontrado.");
+
+            user.Nombre = request.Nombre;
+            user.Apellido = request.Apellido;
+            user.Telefono = request.Telefono;
+            user.Cedula = request.Cedula;
+
+            if (!string.IsNullOrEmpty(request.FotoPerfilUrl))
+                user.FotoPerfilUrl = request.FotoPerfilUrl;
+
+            await _userManager.UpdateAsync(user);
+
+            if (!string.IsNullOrWhiteSpace(request.Password))
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                await _userManager.ResetPasswordAsync(user, token, request.Password);
+            }
+        }
+
+        public async Task ChangeUserStatusAsync(string userId, bool status, string currentAdminId)
+        {
+            if (userId == currentAdminId)
+                throw new InvalidOperationException("No puedes cambiar tu propio estado.");
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) throw new Exception("Usuario no encontrado.");
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            if (roles.Contains("Administrador") && !status)
+            {
+                var admins = await _userManager.GetUsersInRoleAsync("Administrador");
+                var activeAdmins = admins.Count(a => a.EstaActivo);
+                if (activeAdmins <= 1)
+                    throw new InvalidOperationException("Debe haber al menos un administrador activo.");
+            }
+
+            user.EstaActivo = status;
+            await _userManager.UpdateAsync(user);
+        }
+
+        public async Task DeleteUserAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) throw new Exception("Usuario no encontrado.");
+
+            var propiedadesDelAgente = (await _propiedadRepository.GetAllAsync())
+                                        .Where(p => p.AgenteId == userId).ToList();
+
+            foreach (var prop in propiedadesDelAgente)
+            {
+                await _propiedadRepository.DeleteConDependenciasAsync(prop.Id);
+            }
+
+            await _userManager.DeleteAsync(user);
+        }
     }
 }

@@ -18,49 +18,14 @@ namespace RealStateApp.Persistance.Contexts
             public DbSet<Oferta> Ofertas { get; set; } = null!;
             public DbSet<Mensaje> Mensajes { get; set; } = null!;
 
-            protected override void OnModelCreating(ModelBuilder builder)
-            {
-                base.OnModelCreating(builder);
+       
+        
+          protected override void OnModelCreating(ModelBuilder builder)
+          {
+            base.OnModelCreating(builder);
 
-            builder.Entity<ApplicationUser>().ToTable("Users");
-            builder.Entity<Propiedad>().ToTable("Propiedades");
-
-            // Configuración de llaves primarias compuestas
-            builder.Entity<PropiedadMejora>()
-                .HasKey(pm => new { pm.PropiedadId, pm.MejoraId });
-
-
-            builder.Entity<Propiedad>()
-                .HasOne(p => p.Agente)
-                .WithMany(u => u.Propiedades)
-                .HasForeignKey(p => p.AgenteId)
-                .OnDelete(DeleteBehavior.NoAction);
-
-            builder.Entity<Mensaje>()
-                .HasOne(m => m.Cliente)
-                .WithMany(u => u.MensajesComoCliente)
-                .HasForeignKey(m => m.ClienteId)
-                .OnDelete(DeleteBehavior.NoAction);
-
-            builder.Entity<Mensaje>()
-                .HasOne(m => m.Agente)
-                .WithMany(u => u.MensajesComoAgente)
-                .HasForeignKey(m => m.AgenteId)
-                .OnDelete(DeleteBehavior.NoAction);
-
-            builder.Entity<Oferta>()
-                .HasOne(o => o.Comprador)
-                .WithMany(u => u.Ofertas)
-                .HasForeignKey(o => o.CompradorId)
-                .OnDelete(DeleteBehavior.NoAction);
-
-            builder.Entity<Favorito>()
-                .HasOne(f => f.Usuario)
-                .WithMany(u => u.Favoritos)
-                .HasForeignKey(f => f.UsuarioId)
-                .OnDelete(DeleteBehavior.NoAction);
+            builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+          }
 
         }
-        
-    }
 }

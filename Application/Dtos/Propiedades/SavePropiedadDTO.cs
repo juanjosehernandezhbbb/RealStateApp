@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace RealStateApp.Core.Application.DTOs.Propiedades
 {
@@ -12,6 +13,8 @@ namespace RealStateApp.Core.Application.DTOs.Propiedades
         public decimal Tamano { get; set; }
         public int CantidadHabitaciones { get; set; }
         public int CantidadBanos { get; set; }
+
+        [JsonIgnore]
         public string AgenteId { get; set; } = null!;
 
  

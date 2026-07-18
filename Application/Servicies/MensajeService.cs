@@ -10,10 +10,10 @@ namespace RealStateApp.Core.Application.Services
 {
     public class MensajeService : GenericService<SaveMensajeDTO, MensajeDTO, Mensaje>, IMensajeService
     {
-        private readonly IGenericRepository<Mensaje> _repository;
+        private readonly IMensajeRepository _repository;
         private readonly IMapper _mapper;
 
-        public MensajeService(IGenericRepository<Mensaje> repository, IMapper mapper) : base(repository, mapper)
+        public MensajeService(IMensajeRepository repository, IMapper mapper) : base(repository, mapper)
         {
             _repository = repository;
             _mapper = mapper;
@@ -21,10 +21,14 @@ namespace RealStateApp.Core.Application.Services
 
         public override async Task<SaveMensajeDTO> AddAsync(SaveMensajeDTO dto)
         {
+            if (dto.EmisorId != dto.ClienteId && dto.EmisorId != dto.AgenteId)
+                throw new UnauthorizedAccessException("El emisor del mensaje debe ser el cliente o el agente involucrado.");
+
             Mensaje entity = _mapper.Map<Mensaje>(dto);
             entity.FechaEnvio = DateTime.Now;
             entity = await _repository.AddAsync(entity);
             return _mapper.Map<SaveMensajeDTO>(entity);
         }
+
     }
 }

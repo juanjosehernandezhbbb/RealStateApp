@@ -8,8 +8,29 @@ namespace RealStateApp.Core.Application.Services
 {
     public class TipoPropiedadService : GenericService<SaveTipoPropiedadDTO, TipoPropiedadDTO, TipoPropiedad>, ITipoPropiedadService
     {
-        public TipoPropiedadService(IGenericRepository<TipoPropiedad> repository, IMapper mapper) : base(repository, mapper)
+        private readonly ITipoPropiedadRepository _repository;
+        private readonly IMapper _mapper;
+
+        public TipoPropiedadService(ITipoPropiedadRepository repository, IMapper mapper) : base(repository, mapper)
         {
+            _repository = repository;
+            _mapper = mapper;
+        }
+
+        public override async Task<SaveTipoPropiedadDTO> AddAsync(SaveTipoPropiedadDTO dto)
+        {
+            if (await _repository.ExisteNombreAsync(dto.Nombre))
+                throw new ArgumentException("Ya existe un registro con este nombre.");
+
+            return await base.AddAsync(dto);
+        }
+
+        public override async Task UpdateAsync(SaveTipoPropiedadDTO dto, int id)
+        {
+            if (await _repository.ExisteNombreAsync(dto.Nombre, id))
+                throw new ArgumentException("Ya existe otro registro con este nombre.");
+
+            await base.UpdateAsync(dto, id);
         }
     }
 }

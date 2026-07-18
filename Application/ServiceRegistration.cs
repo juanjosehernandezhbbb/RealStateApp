@@ -16,9 +16,6 @@ namespace RealStateApp.Core.Application
                 config.AddProfile<GeneralProfile>();
             });
 
-            // Registrar Servicios Genéricos
-            services.AddTransient(typeof(IGenericService<,,>), typeof(GenericService<,,>));
-
             // Registrar Servicios Específicos
             services.AddTransient<ITipoPropiedadService, TipoPropiedadService>();
             services.AddTransient<ITipoVentaService, TipoVentaService>();

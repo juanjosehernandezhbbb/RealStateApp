@@ -4,17 +4,16 @@ using RealStateApp.Core.Application.Interfaces.Repositories;
 using RealStateApp.Core.Application.Interfaces.Services;
 using RealStateApp.Core.Domain.Entities;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace RealStateApp.Core.Application.Services
 {
     public class FavoritoService : GenericService<SaveFavoritoDTO, FavoritoDTO, Favorito>, IFavoritoService
     {
-        private readonly IGenericRepository<Favorito> _repository;
+        private readonly IFavoritoRepository _repository;
         private readonly IMapper _mapper;
 
-        public FavoritoService(IGenericRepository<Favorito> repository, IMapper mapper) : base(repository, mapper)
+        public FavoritoService(IFavoritoRepository repository, IMapper mapper) : base(repository, mapper)
         {
             _repository = repository;
             _mapper = mapper;
@@ -22,10 +21,9 @@ namespace RealStateApp.Core.Application.Services
 
         public override async Task<SaveFavoritoDTO> AddAsync(SaveFavoritoDTO dto)
         {
-            var favoritos = await _repository.GetAllAsync();
-            if (favoritos.Any(f => f.UsuarioId == dto.UsuarioId && f.PropiedadFavoritaId == dto.PropiedadFavoritaId))
+            if (await _repository.ExisteFavoritoAsync(dto.UsuarioId, dto.PropiedadFavoritaId))
             {
-                return dto; 
+                return null; 
             }
 
             Favorito entity = _mapper.Map<Favorito>(dto);
