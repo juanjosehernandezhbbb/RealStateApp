@@ -1,6 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using RealStateApp.Core.Application.Interfaces.Services;
+using RealStateApp.Core.Application.DTOs.Propiedades;
+using RealStateApp.Core.Application.ViewModels;
+using RealStateApp.Core.Domain.Entities;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -9,11 +14,16 @@ public class HomeController : Controller
 {
     private readonly IPropiedadService _propiedadService;
     private readonly ITipoPropiedadService _tipoPropiedadService;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public HomeController(IPropiedadService propiedadService, ITipoPropiedadService tipoPropiedadService)
+    public HomeController(
+        IPropiedadService propiedadService,
+        ITipoPropiedadService tipoPropiedadService,
+        UserManager<ApplicationUser> userManager)
     {
         _propiedadService = propiedadService;
         _tipoPropiedadService = tipoPropiedadService;
+        _userManager = userManager;
     }
 
     public async Task<IActionResult> Index(string codigoFiltro, int? tipoPropiedadId, decimal? precioMin, decimal? precioMax, int? habitaciones, int? banos)
@@ -41,22 +51,18 @@ public class HomeController : Controller
         // HOME PÚBLICO (Usuarios no autenticados)
         // ==========================================
 
-        // 1. Obtenemos todas las propiedades
         var todasLasPropiedades = await _propiedadService.GetAllDTOsAsync();
 
-        // 2. Filtramos de forma segura comparando el texto del estado
         var propiedades = todasLasPropiedades
             .Where(p => p.Estado != null && p.Estado.ToString().Equals("Disponible", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        // 3. Búsqueda por código
         if (!string.IsNullOrEmpty(codigoFiltro))
         {
             propiedades = propiedades.Where(p => p.Codigo != null && p.Codigo.Contains(codigoFiltro, StringComparison.OrdinalIgnoreCase)).ToList();
         }
         else
         {
-            // 4. Aplicar filtros combinados
             if (tipoPropiedadId.HasValue && tipoPropiedadId.Value > 0)
             {
                 propiedades = propiedades.Where(p => p.TipoPropiedadId == tipoPropiedadId.Value).ToList();
@@ -79,11 +85,9 @@ public class HomeController : Controller
             }
         }
 
-        // Cargar los tipos de propiedad para el select del formulario
         var listaTipos = await _tipoPropiedadService.GetAllDTOsAsync();
         ViewBag.TiposPropiedad = new SelectList(listaTipos, "Id", "Nombre", tipoPropiedadId);
 
-        // Mantener los valores actuales en la vista
         ViewBag.CodigoFiltro = codigoFiltro;
         ViewBag.PrecioMin = precioMin;
         ViewBag.PrecioMax = precioMax;
@@ -91,5 +95,79 @@ public class HomeController : Controller
         ViewBag.Banos = banos;
 
         return View(propiedades);
+    }
+
+    // ==========================================
+    // MÓDULO PÚBLICO: LISTADO Y BÚSQUEDA DE AGENTES
+    // ==========================================
+    [AllowAnonymous]
+    [HttpGet]
+    public async Task<IActionResult> Agentes(string nombreFiltro)
+    {
+        var todosLosAgentes = await _userManager.GetUsersInRoleAsync("Agente");
+
+        var agentesActivos = todosLosAgentes
+            .Where(a => a.LockoutEnd == null || a.LockoutEnd <= DateTimeOffset.Now)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(nombreFiltro))
+        {
+            agentesActivos = agentesActivos.Where(a =>
+                (!string.IsNullOrEmpty(a.Nombre) && a.Nombre.Contains(nombreFiltro, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(a.Apellido) && a.Apellido.Contains(nombreFiltro, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(a.UserName) && a.UserName.Contains(nombreFiltro, StringComparison.OrdinalIgnoreCase))
+            );
+        }
+
+        var agentesOrdenados = agentesActivos
+            .OrderBy(a => a.Nombre)
+            .ThenBy(a => a.Apellido)
+            .ToList();
+
+        ViewBag.NombreFiltro = nombreFiltro;
+        return View(agentesOrdenados);
+    }
+
+    // ==========================================
+    // MÓDULO PÚBLICO: PROPIEDADES DE UN AGENTE
+    // ==========================================
+    [AllowAnonymous]
+    [HttpGet]
+    public async Task<IActionResult> PropiedadesPorAgente(string id)
+    {
+        var agente = await _userManager.FindByIdAsync(id);
+
+        if (agente == null || (agente.LockoutEnd != null && agente.LockoutEnd > DateTimeOffset.Now))
+        {
+            TempData["Error"] = "El agente solicitado no existe o no se encuentra disponible.";
+            return RedirectToAction(nameof(Agentes));
+        }
+
+        var propiedadesAgente = await _propiedadService.GetPropiedadesByAgenteAsync(id);
+
+        var disponibles = propiedadesAgente?
+            .Where(p => p.Estado != null && p.Estado.ToString().Equals("Disponible", StringComparison.OrdinalIgnoreCase))
+            .ToList() ?? new();
+
+        var propiedadesViewModel = disponibles.Select(p => new PropertyViewModel
+        {
+            Id = p.Id,
+            Codigo = p.Codigo,
+            Descripcion = p.Descripcion,
+            TipoPropiedadId = p.TipoPropiedadId,
+            TipoPropiedad = p.TipoPropiedadNombre,
+            TipoVentaId = p.TipoVentaId,
+            TipoVenta = p.TipoVentaNombre,
+            Precio = p.Precio,
+            CantidadHabitaciones = p.CantidadHabitaciones,
+            CantidadBanos = p.CantidadBanos,
+            Tamano = (double)p.Tamano,
+            ImagenPrincipalUrl = p.ImagenesUrls != null && p.ImagenesUrls.Any() ? p.ImagenesUrls.First() : string.Empty,
+            AgenteId = p.AgenteId,
+            Estado = p.Estado?.ToString()
+        }).ToList();
+
+        ViewBag.Agente = agente;
+        return View(propiedadesViewModel);
     }
 }

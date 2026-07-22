@@ -15,7 +15,6 @@ builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddSharedInfrastructure(builder.Configuration);
 builder.Services.AddApplicationLayer();
 
-
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -36,12 +35,21 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-// INTEGRACIÓN DEL SEEDER
+// INTEGRACIÓN DE SEEDERS
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    await IdentitySeeder.SeedRolesAsync(services);
-    await IdentitySeeder.SeedUsersAsync(services);
+    try
+    {
+        await IdentitySeeder.SeedRolesAsync(services);
+        await IdentitySeeder.SeedUsersAsync(services);
+        await PropertyDataSeeder.SeedDefaultDataAsync(services);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ocurrió un error al sembrar la base de datos.");
+    }
 }
 
 app.Run();

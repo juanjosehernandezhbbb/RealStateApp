@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using RealStateApp.Core.Domain.Entities;
+
 namespace RealStateApp.Persistance.Seeders;
 
 public static class IdentitySeeder
@@ -23,10 +24,10 @@ public static class IdentitySeeder
 
         var usuarios = new[]
         {
-            new { Email = "admin@realstateapp.com", Nombre = "Admin", Apellido = "Sistema", Telefono = "8090000001", Rol = "Administrador" },
-            new { Email = "dev@realstateapp.com",   Nombre = "Dev",   Apellido = "Sistema", Telefono = "8090000002", Rol = "Desarrollador" },
-            new { Email = "cliente@realstateapp.com", Nombre = "Cliente", Apellido = "Demo", Telefono = "8090000003", Rol = "Cliente" },
-            new { Email = "agente@realstateapp.com",  Nombre = "Agente",  Apellido = "Demo", Telefono = "8090000004", Rol = "Agente" },
+            new { Email = "admin@realstateapp.com", Nombre = "Admin", Apellido = "Sistema", Telefono = "8090000001", Cedula = "001-0000001-1", Rol = "Administrador" },
+            new { Email = "dev@realstateapp.com", Nombre = "Dev", Apellido = "Sistema", Telefono = "8090000002", Cedula = "001-0000002-2", Rol = "Desarrollador" },
+            new { Email = "cliente@realstateapp.com", Nombre = "Cliente", Apellido = "Demo", Telefono = "8090000003", Cedula = "001-0000003-3", Rol = "Cliente" },
+            new { Email = "agente@realstateapp.com", Nombre = "Agente", Apellido = "Demo", Telefono = "8090000004", Cedula = "001-0000004-4", Rol = "Agente" },
         };
 
         foreach (var u in usuarios)
@@ -42,6 +43,8 @@ public static class IdentitySeeder
                 Nombre = u.Nombre,
                 Apellido = u.Apellido,
                 Telefono = u.Telefono,
+                Cedula = u.Cedula,
+                FotoPerfilUrl = "/images/default-user.png",
                 EstaActivo = true,
                 FechaRegistro = DateTime.Now
             };

@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using RealStateApp.Core.Application.DTOs.Mensajes;
 using RealStateApp.Core.Application.DTOs.Propiedades;
 using RealStateApp.Core.Application.Interfaces.Services;
+using RealStateApp.Core.Domain.Entities;
 using RealStateApp.WebApp.ViewModels.Agente;
 using RealStateApp.WebApp.ViewModels.Propiedades;
 using System;
@@ -14,7 +16,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-[Authorize(Roles = "Agente")]
 public class AgenteController : Controller
 {
     private readonly IPropiedadService _propiedadService;
@@ -22,25 +23,28 @@ public class AgenteController : Controller
     private readonly ITipoVentaService _tipoVentaService;
     private readonly IMejoraService _mejoraService;
     private readonly IOfertaService _ofertaService;
-    private readonly IMensajeService _mensajeService; 
+    private readonly IMensajeService _mensajeService;
     private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public AgenteController(
         IPropiedadService propiedadService,
         ITipoPropiedadService tipoPropiedadService,
         ITipoVentaService tipoVentaService,
         IMejoraService mejoraService,
-        IOfertaService ofertaService,  
-        IMensajeService mensajeService, 
-        IWebHostEnvironment webHostEnvironment)
+        IOfertaService ofertaService,
+        IMensajeService mensajeService,
+        IWebHostEnvironment webHostEnvironment,
+        UserManager<ApplicationUser> userManager)
     {
         _propiedadService = propiedadService;
         _tipoPropiedadService = tipoPropiedadService;
         _tipoVentaService = tipoVentaService;
         _mejoraService = mejoraService;
-        _ofertaService = ofertaService; 
-        _mensajeService = mensajeService; 
+        _ofertaService = ofertaService;
+        _mensajeService = mensajeService;
         _webHostEnvironment = webHostEnvironment;
+        _userManager = userManager;
     }
 
     private string GetAgenteId()
@@ -49,9 +53,22 @@ public class AgenteController : Controller
     }
 
     // ==========================================
-    // 1. HOME DEL AGENTE
+    // 1. LISTADO PÚBLICO DE AGENTES (Visible sin login)
     // ==========================================
+    [AllowAnonymous]
+    [HttpGet]
     public async Task<IActionResult> Index()
+    {
+        var agentes = await _userManager.GetUsersInRoleAsync("Agente");
+        return View(agentes);
+    }
+
+    // ==========================================
+    // 2. PANEL / HOME DEL AGENTE LOGUEADO
+    // ==========================================
+    [Authorize(Roles = "Agente")]
+    [HttpGet]
+    public async Task<IActionResult> Panel()
     {
         string agenteId = GetAgenteId();
         var propiedades = await _propiedadService.GetPropiedadesByAgenteAsync(agenteId);
@@ -59,8 +76,10 @@ public class AgenteController : Controller
     }
 
     // ==========================================
-    // 2. MANTENIMIENTO DE PROPIEDADES
+    // 3. MANTENIMIENTO DE PROPIEDADES
     // ==========================================
+    [Authorize(Roles = "Agente")]
+    [HttpGet]
     public async Task<IActionResult> Mantenimiento()
     {
         string agenteId = GetAgenteId();
@@ -74,8 +93,9 @@ public class AgenteController : Controller
     }
 
     // ==========================================
-    // 3. CREAR PROPIEDAD
+    // 4. CREAR PROPIEDAD
     // ==========================================
+    [Authorize(Roles = "Agente")]
     [HttpGet]
     public async Task<IActionResult> Crear()
     {
@@ -109,6 +129,7 @@ public class AgenteController : Controller
         return View(vm);
     }
 
+    [Authorize(Roles = "Agente")]
     [HttpPost]
     public async Task<IActionResult> Crear(SavePropiedadViewModel vm)
     {
@@ -131,7 +152,6 @@ public class AgenteController : Controller
 
         string agenteId = GetAgenteId();
 
-        // Guardar imágenes físicamente en wwwroot/images/properties
         List<string> imagenesUrls = new List<string>();
         string basePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", "properties");
 
@@ -177,8 +197,9 @@ public class AgenteController : Controller
     }
 
     // ==========================================
-    // 4. EDITAR PROPIEDAD
+    // 5. EDITAR PROPIEDAD
     // ==========================================
+    [Authorize(Roles = "Agente")]
     [HttpGet]
     public async Task<IActionResult> Editar(int id)
     {
@@ -217,6 +238,7 @@ public class AgenteController : Controller
         return View(vm);
     }
 
+    [Authorize(Roles = "Agente")]
     [HttpPost]
     public async Task<IActionResult> Editar(SavePropiedadViewModel vm)
     {
@@ -283,8 +305,9 @@ public class AgenteController : Controller
     }
 
     // ==========================================
-    // 5. ELIMINAR PROPIEDAD
+    // 6. ELIMINAR PROPIEDAD
     // ==========================================
+    [Authorize(Roles = "Agente")]
     [HttpGet]
     public async Task<IActionResult> Eliminar(int id)
     {
@@ -307,6 +330,7 @@ public class AgenteController : Controller
         return View(propiedad);
     }
 
+    [Authorize(Roles = "Agente")]
     [HttpPost, ActionName("Eliminar")]
     public async Task<IActionResult> EliminarConfirmado(int id)
     {
@@ -325,8 +349,9 @@ public class AgenteController : Controller
     }
 
     // ==========================================
-    // 6. DETALLE DE PROPIEDAD
+    // 7. DETALLE DE PROPIEDAD
     // ==========================================
+    [Authorize(Roles = "Agente")]
     [HttpGet]
     public async Task<IActionResult> Detalle(int id)
     {
@@ -337,14 +362,12 @@ public class AgenteController : Controller
         if (propiedad == null)
         {
             TempData["Error"] = "No tiene permisos para ver el detalle de esta propiedad.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Panel));
         }
 
-        // Usar GetAllDTOsAsync() en lugar de GetAllAsync()
         var todasLasOfertas = await _ofertaService.GetAllDTOsAsync();
         var ofertasPropiedad = todasLasOfertas?.Where(o => o.PropiedadId == id).ToList() ?? new();
 
-        // Obtener todos los mensajes de esta propiedad para el agente
         var mensajesPropiedad = await _mensajeService.GetMensajesPorPropiedadAsync(id);
 
         AgentePropiedadDetailViewModel vm = new()
@@ -358,8 +381,9 @@ public class AgenteController : Controller
     }
 
     // ==========================================
-    // 7. CONVERSACIÓN / CHAT CON CLIENTE
+    // 8. CONVERSACIÓN / CHAT CON CLIENTE
     // ==========================================
+    [Authorize(Roles = "Agente")]
     [HttpGet]
     public async Task<IActionResult> Conversacion(int propiedadId, string clienteId)
     {
@@ -370,10 +394,9 @@ public class AgenteController : Controller
         if (propiedad == null)
         {
             TempData["Error"] = "No tiene acceso a esta conversación.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Panel));
         }
 
-        // Filtrar usando las propiedades reales de MensajeDTO
         var todosLosMensajes = await _mensajeService.GetMensajesPorPropiedadAsync(propiedadId);
         ViewBag.Mensajes = todosLosMensajes?.Where(m => m.ClienteId == clienteId).ToList() ?? new();
 
@@ -388,6 +411,7 @@ public class AgenteController : Controller
         return View(vm);
     }
 
+    [Authorize(Roles = "Agente")]
     [HttpPost]
     public async Task<IActionResult> EnviarRespuestaMensaje(SaveMensajeDTO vm)
     {
@@ -401,15 +425,15 @@ public class AgenteController : Controller
         vm.AgenteId = agenteId;
         vm.EmisorId = agenteId;
 
-        // GUARDAR EL MENSAJE EN BASE DE DATOS
         await _mensajeService.AddAsync(vm);
 
         return RedirectToAction(nameof(Conversacion), new { propiedadId = vm.PropiedadId, clienteId = vm.ClienteId });
     }
 
     // ==========================================
-    // 8. GESTIÓN DE OFERTAS (ÚNICA VERSIÓN CORRECTA)
+    // 9. GESTIÓN DE OFERTAS
     // ==========================================
+    [Authorize(Roles = "Agente")]
     [HttpPost]
     public async Task<IActionResult> AceptarOferta(int ofertaId, int propiedadId)
     {
@@ -419,6 +443,7 @@ public class AgenteController : Controller
         return RedirectToAction(nameof(Detalle), new { id = propiedadId });
     }
 
+    [Authorize(Roles = "Agente")]
     [HttpPost]
     public async Task<IActionResult> RechazarOferta(int ofertaId, int propiedadId)
     {
@@ -429,8 +454,9 @@ public class AgenteController : Controller
     }
 
     // ==========================================
-    // 9. MÓDULO MI PERFIL
+    // 10. MÓDULO MI PERFIL
     // ==========================================
+    [Authorize(Roles = "Agente")]
     [HttpGet]
     public async Task<IActionResult> Perfil()
     {
@@ -438,6 +464,7 @@ public class AgenteController : Controller
         return View();
     }
 
+    [Authorize(Roles = "Agente")]
     [HttpPost]
     public async Task<IActionResult> Perfil(string nombre, string apellido, string telefono, IFormFile foto)
     {
@@ -459,7 +486,6 @@ public class AgenteController : Controller
             return View();
         }
 
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Panel));
     }
-
 }

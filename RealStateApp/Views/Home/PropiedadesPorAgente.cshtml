@@ -1,0 +1,80 @@
+﻿@model IEnumerable<RealStateApp.Core.Application.ViewModels.PropertyViewModel>
+
+@{
+    var agente = ViewBag.Agente as RealStateApp.Core.Domain.Entities.ApplicationUser;
+    ViewData["Title"] = agente != null ? $"Propiedades de {agente.Nombre} {agente.Apellido}" : "Propiedades del Agente";
+}
+
+<div class="container my-4">
+    <!-- Encabezado con información del agente -->
+    <div class="row mb-4 align-items-center bg-light p-4 rounded shadow-sm">
+        <div class="col-md-auto text-center mb-3 mb-md-0">
+            @if (!string.IsNullOrEmpty(agente?.FotoPerfilUrl))
+            {
+                <img src="@agente.FotoPerfilUrl" alt="Foto del agente" class="rounded-circle img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+            }
+            else
+            {
+                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px; font-size: 2rem;">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+            }
+        </div>
+        <div class="col">
+            <h2 class="fw-bold text-dark mb-1">@agente?.Nombre @agente?.Apellido</h2>
+            <p class="text-muted mb-2"><i class="bi bi-envelope-fill me-1"></i> @agente?.Email</p>
+            <p class="text-muted mb-0"><i class="bi bi-telephone-fill me-1"></i> @(agente?.PhoneNumber ?? "No disponible")</p>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col">
+            <h4 class="fw-bold">Inmuebles Disponibles</h4>
+            <hr />
+        </div>
+    </div>
+
+    <!-- Validación si no hay propiedades disponibles -->
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-warning text-center py-5 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-circle-fill fs-1 d-block mb-3 text-warning"></i>
+            <h5 class="fw-bold">No existen propiedades disponibles asociadas a este agente.</h5>
+            <p class="text-muted mb-3">Este agente actualmente no cuenta con inmuebles activos en el sistema.</p>
+            <a asp-controller="Home" asp-action="Agentes" class="btn btn-outline-primary">Volver al listado de agentes</a>
+        </div>
+    }
+    else
+    {
+        <!-- Listado en cuadrícula de las propiedades -->
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var propiedad in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="@propiedad.ImagenPrincipalUrl" class="card-img-top" alt="Propiedad" style="height: 220px; object-fit: cover;">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-success">@propiedad.TipoVenta</span>
+                                <small class="text-muted fw-bold">Cód: @propiedad.Codigo</small>
+                            </div>
+                            <h5 class="card-title text-primary fw-bold">@propiedad.TipoPropiedad</h5>
+                            <h4 class="fw-bold text-dark mb-3">$@propiedad.Precio.ToString("N2")</h4>
+
+                            <div class="d-flex justify-content-between text-muted small border-top pt-2">
+                                <span><i class="bi bi-door-open me-1"></i> @propiedad.CantidadHabitaciones Hab.</span>
+                                <span><i class="bi bi-water me-1"></i> @propiedad.CantidadBanos Baños</span>
+                                <span><i class="bi bi-rulers me-1"></i> @propiedad.Tamano m²</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-0 pb-3">
+                            <a asp-controller="Propiedad" asp-action="Detalle" asp-route-id="@propiedad.Id" class="btn btn-primary w-100">
+                                Ver Detalle
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
