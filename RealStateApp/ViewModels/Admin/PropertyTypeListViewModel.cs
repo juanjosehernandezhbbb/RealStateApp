@@ -1,0 +1,10 @@
+﻿namespace RealStateApp.Core.Application.ViewModels.Admin
+{
+    public class PropertyTypeListViewModel
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public string Descripcion { get; set; }
+        public int CantidadPropiedades { get; set; }
+    }
+}

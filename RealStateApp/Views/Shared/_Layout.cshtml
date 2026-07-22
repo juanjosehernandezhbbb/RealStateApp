@@ -1,49 +1,110 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - RealStateApp</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <title>@ViewData["Title"] - RealEstateApp</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome para Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/RealStateApp.styles.css" asp-append-version="true" />
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100 bg-light">
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">RealStateApp</a>
+        <!-- Cambiamos expand-sm por expand-lg para dar más espacio horizontal -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm mb-4">
+            <div class="container-fluid px-4">
+                <!-- Logo / Nombre de la app -->
+                <a class="navbar-brand fw-bold text-primary me-4" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fa-solid fa-house-chimney"></i> RealEstateApp
+                </a>
+
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+
+                <div class="navbar-collapse collapse d-lg-inline-flex justify-content-between">
+
+                    <!-- Menú Principal Dinámico (Izquierda) -->
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            @if (User.IsInRole("Administrador"))
+                            {
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Admin" asp-action="Index">Dashboard</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Admin" asp-action="Agentes">Gestión Agentes</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Admin" asp-action="Administradores">Administradores</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Admin" asp-action="Desarrolladores">Desarrolladores</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Admin" asp-action="TiposPropiedades">Tipos Propiedad</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="TipoVenta" asp-action="Index">Tipos Venta</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Mejora" asp-action="Index">Mejoras</a></li>
+                            }
+                            else if (User.IsInRole("Agente"))
+                            {
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Agente" asp-action="Index">Mi Panel</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Agente" asp-action="Mantenimiento">Mis Propiedades</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Agente" asp-action="Perfil">Mi Perfil</a></li>
+                            }
+                            else if (User.IsInRole("Cliente"))
+                            {
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Cliente" asp-action="Index">Home</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Cliente" asp-action="Agentes">Agentes</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark px-2" asp-controller="Cliente" asp-action="MisPropiedades">Mis propiedades</a></li>
+                            }
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark fw-semibold px-2" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark fw-semibold px-2" asp-area="" asp-controller="Agente" asp-action="Index">Agentes</a>
+                            </li>
+                        }
+                    </ul>
+
+                    <!-- Opciones de Cuenta (Derecha) -->
+                    <ul class="navbar-nav ms-auto align-items-lg-center">
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item d-flex align-items-center">
+                                <span class="me-3 text-muted small">Hola, <strong>@User.Identity.Name</strong></span>
+                                <form class="form-inline m-0" asp-controller="Account" asp-action="LogOut" method="post">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm fw-bold rounded-pill px-3">
+                                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item me-2">
+                                <a class="nav-link text-primary fw-bold" asp-controller="Account" asp-action="Login">Iniciar Sesión</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="btn btn-primary fw-bold rounded-pill px-4" asp-controller="Account" asp-action="Register">Únete a la app</a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - RealStateApp - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <main role="main" class="container flex-grow-1 pb-5">
+        @RenderBody()
+    </main>
+
+    <footer class="bg-white border-top text-muted py-4 mt-auto">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2026 - <strong>RealEstateApp</strong>. Todos los derechos reservados.</p>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

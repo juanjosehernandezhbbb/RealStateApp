@@ -1,0 +1,144 @@
+﻿@model RealStateApp.WebApp.ViewModels.Agente.AgentePropiedadDetailViewModel
+
+@{
+    ViewData["Title"] = "Detalle de Propiedad";
+}
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Detalle de Propiedad (@Model.Propiedad.Codigo)</h2>
+        <a asp-action="Index" class="btn btn-secondary">Volver al Home</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <!-- Información General -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    @if (Model.Propiedad.ImagenesUrls != null && Model.Propiedad.ImagenesUrls.Any())
+                    {
+                        <div id="carouselPropiedad" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
+                                @for (int i = 0; i < Model.Propiedad.ImagenesUrls.Count; i++)
+                                {
+                                    <div class="carousel-item @(i == 0 ? "active" : "")">
+                                        <img src="@Model.Propiedad.ImagenesUrls[i]" class="d-block w-100 rounded" style="height: 300px; object-fit: cover;" alt="...">
+                                    </div>
+                                }
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselPropiedad" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#carouselPropiedad" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    }
+                </div>
+                <div class="col-md-6">
+                    <h4>@Model.Propiedad.TipoPropiedadNombre - RD$ @Model.Propiedad.Precio.ToString("N2")</h4>
+                    <p class="text-muted"><strong>Tipo de Venta:</strong> @Model.Propiedad.TipoVentaNombre</p>
+                    <p><strong>Descripción:</strong> @Model.Propiedad.Descripcion</p>
+                    <ul class="list-unstyled">
+                        <li><strong>Habitaciones:</strong> @Model.Propiedad.CantidadHabitaciones</li>
+                        <li><strong>Baños:</strong> @Model.Propiedad.CantidadBanos</li>
+                        <li><strong>Tamaño:</strong> @Model.Propiedad.Tamano mts²</li>
+                        <li><strong>Estado:</strong> <span class="badge @(Model.Propiedad.Estado == "Vendida" ? "bg-danger" : "bg-success")">@Model.Propiedad.Estado</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Conversaciones / Chat -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">Conversaciones con Clientes</div>
+        <div class="card-body">
+            @if (Model.Mensajes == null || !Model.Mensajes.Any())
+            {
+                <p class="text-muted text-center my-3">No hay conversaciones registradas para esta propiedad.</p>
+            }
+            else
+            {
+                var clientesConversacion = Model.Mensajes.GroupBy(m => m.ClienteId);
+                <div class="list-group">
+                    @foreach (var grupo in clientesConversacion)
+                    {
+                        var primerMensaje = grupo.First();
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>@primerMensaje.ClienteNombre</strong>
+                                <p class="mb-0 text-muted small">Último mensaje: @grupo.OrderByDescending(m => m.FechaEnvio).First().Contenido</p>
+                            </div>
+                            <a asp-action="Conversacion" asp-route-propiedadId="@Model.Propiedad.Id" asp-route-clienteId="@grupo.Key" class="btn btn-outline-primary btn-sm">
+                                Ver Chat
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Sección de Ofertas Recibidas -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">Ofertas Recibidas</div>
+        <div class="card-body">
+            @if (Model.Ofertas == null || !Model.Ofertas.Any())
+            {
+                <p class="text-muted text-center my-3">No hay ofertas recibidas para esta propiedad todavía.</p>
+            }
+            else
+            {
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Monto</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var oferta in Model.Ofertas)
+                        {
+                            <tr>
+                                <td>@oferta.CompradorNombre</td>
+                                <td>RD$ @oferta.Monto.ToString("N2")</td>
+                                <td>
+                                    <span class="badge @(oferta.Estado == "Pendiente" ? "bg-warning text-dark" : oferta.Estado == "Aceptada" ? "bg-success" : "bg-danger")">
+                                        @oferta.Estado
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (oferta.Estado == "Pendiente" && Model.Propiedad.Estado == "Disponible")
+                                    {
+                                        <form asp-action="AceptarOferta" method="post" class="d-inline">
+                                            <input type="hidden" name="ofertaId" value="@oferta.Id" />
+                                            <input type="hidden" name="propiedadId" value="@Model.Propiedad.Id" />
+                                            <button type="submit" class="btn btn-success btn-sm">Aceptar</button>
+                                        </form>
+                                        <form asp-action="RechazarOferta" method="post" class="d-inline">
+                                            <input type="hidden" name="ofertaId" value="@oferta.Id" />
+                                            <input type="hidden" name="propiedadId" value="@Model.Propiedad.Id" />
+                                            <button type="submit" class="btn btn-danger btn-sm">Rechazar</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>

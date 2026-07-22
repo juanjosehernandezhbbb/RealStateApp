@@ -1,0 +1,114 @@
+﻿@model RealStateApp.WebApp.ViewModels.Propiedades.SavePropiedadViewModel
+
+@{
+    ViewData["Title"] = "Registrar Propiedad";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 800px;">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <h3 class="fw-bold text-dark mb-3">Registrar Nueva Propiedad</h3>
+            <p class="text-muted mb-4">Complete los campos correspondientes para dar de alta una nueva propiedad en el sistema.</p>
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form asp-action="Crear" method="post" enctype="multipart/form-data" class="needs-validation">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="TipoPropiedadId" class="form-label fw-semibold">Tipo de propiedad <span class="text-danger">*</span></label>
+                        <select asp-for="TipoPropiedadId" class="form-select" asp-items="@(new SelectList(Model.TiposPropiedades, "Id", "Nombre"))">
+                            <option value="">-- Seleccione un tipo --</option>
+                        </select>
+                        <span asp-validation-for="TipoPropiedadId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="TipoVentaId" class="form-label fw-semibold">Tipo de venta <span class="text-danger">*</span></label>
+                        <select asp-for="TipoVentaId" class="form-select" asp-items="@(new SelectList(Model.TiposVentas, "Id", "Nombre"))">
+                            <option value="">-- Seleccione tipo de venta --</option>
+                        </select>
+                        <span asp-validation-for="TipoVentaId" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Precio" class="form-label fw-semibold">Precio ($) <span class="text-danger">*</span></label>
+                        <input asp-for="Precio" class="form-control" type="number" step="0.01" placeholder="0.00" />
+                        <span asp-validation-for="Precio" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Tamano" class="form-label fw-semibold">Tamaño (mt²) <span class="text-danger">*</span></label>
+                        <input asp-for="Tamano" class="form-control" type="number" step="0.01" placeholder="0.00" />
+                        <span asp-validation-for="Tamano" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CantidadHabitaciones" class="form-label fw-semibold">Habitaciones <span class="text-danger">*</span></label>
+                        <input asp-for="CantidadHabitaciones" class="form-control" type="number" placeholder="Ej. 3" />
+                        <span asp-validation-for="CantidadHabitaciones" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CantidadBanos" class="form-label fw-semibold">Baños <span class="text-danger">*</span></label>
+                        <input asp-for="CantidadBanos" class="form-control" type="number" placeholder="Ej. 2" />
+                        <span asp-validation-for="CantidadBanos" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Descripcion" class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
+                    <textarea asp-for="Descripcion" class="form-control" rows="3" placeholder="Detalles de la propiedad..."></textarea>
+                    <span asp-validation-for="Descripcion" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Mejoras de la propiedad</label>
+                    <div class="row g-2">
+                        @if (Model.Mejoras != null)
+                        {
+                            @foreach (var mejora in Model.Mejoras)
+                            {
+                                <div class="col-md-3 col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="MejorasIds" value="@mejora.Id" id="mejora_@mejora.Id">
+                                        <label class="form-check-label" for="mejora_@mejora.Id">
+                                            @mejora.Nombre
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="ArchivosImagenes" class="form-label fw-semibold">Imágenes de la propiedad <span class="text-danger">*</span></label>
+                    <input asp-for="ArchivosImagenes" type="file" class="form-control" multiple accept=".jpg,.jpeg,.png" />
+                    <div class="form-text">Debe seleccionar de 1 a 4 imágenes en formato .jpg, .jpeg o .png</div>
+                    <span asp-validation-for="ArchivosImagenes" class="text-danger small"></span>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Mantenimiento" class="btn btn-secondary px-4 fw-bold">Volver atrás</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">Crear propiedad</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,0 +1,80 @@
+﻿@model RealStateApp.Core.Application.DTOs.Propiedades.PropiedadDTO
+
+@{
+    ViewData["Title"] = "Detalle de Propiedad";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>@Model.TipoPropiedadNombre - @Model.TipoVentaNombre</h2>
+            <p class="text-muted"><i class="bi bi-geo-alt"></i> Código: @Model.Codigo</p>
+
+            <!-- Carrusel o Galería de Imágenes -->
+            @if (Model.ImagenesUrls != null && Model.ImagenesUrls.Any())
+            {
+                <div id="propertyCarousel" class="carousel slide mb-4 shadow-sm rounded overflow-hidden" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        @for (int i = 0; i < Model.ImagenesUrls.Count; i++)
+                        {
+                            <div class="carousel-item @(i == 0 ? "active" : "")">
+                                <img src="@Model.ImagenesUrls[i]" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="Imagen de la propiedad">
+                            </div>
+                        }
+                    </div>
+                    @if (Model.ImagenesUrls.Count > 1)
+                    {
+                        <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Anterior</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Siguiente</span>
+                        </button>
+                    }
+                </div>
+            }
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h4>Descripción</h4>
+                    <p>@Model.Descripcion</p>
+                </div>
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h4>Características</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Precio:</strong> $ @Model.Precio.ToString("N2")</li>
+                        <li class="list-group-item"><strong>Tamaño:</strong> @Model.Tamano m²</li>
+                        <li class="list-group-item"><strong>Habitaciones:</strong> @Model.CantidadHabitaciones</li>
+                        <li class="list-group-item"><strong>Baños:</strong> @Model.CantidadBanos</li>
+                        <li class="list-group-item"><strong>Estado:</strong> @Model.Estado</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm sticky-top" style="top: 2rem;">
+                <div class="card-body text-center">
+                    <h4>Agente Responsable</h4>
+                    <p class="fw-bold">@Model.AgenteNombre</p>
+                    <p class="text-muted">¿Te interesa esta propiedad?</p>
+
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <a asp-controller="Cliente" asp-action="Chat" asp-route-propiedadId="@Model.Id" class="btn btn-success w-100 mb-2">Contactar al Agente</a>
+                        <a asp-controller="Cliente" asp-action="HacerOferta" asp-route-propiedadId="@Model.Id" class="btn btn-outline-primary w-100">Hacer una Oferta</a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-primary w-100">Inicia sesión para contactar</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

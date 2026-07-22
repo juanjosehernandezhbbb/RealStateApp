@@ -1,5 +1,6 @@
 ﻿using RealStateApp.Core.Application.DTOs.Propiedades;
 using RealStateApp.Core.Domain.Entities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RealStateApp.Core.Application.Interfaces.Services
@@ -11,5 +12,7 @@ namespace RealStateApp.Core.Application.Interfaces.Services
 
         Task<PropiedadDTO> GetByCodeAsync(string codigo);
         Task<List<PropiedadDTO>> GetPropiedadesByAgenteAsync(string agenteId);
+
+        Task<List<PropiedadDTO>> GetAllAsync();
     }
 }

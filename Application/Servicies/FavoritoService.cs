@@ -4,6 +4,7 @@ using RealStateApp.Core.Application.Interfaces.Repositories;
 using RealStateApp.Core.Application.Interfaces.Services;
 using RealStateApp.Core.Domain.Entities;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RealStateApp.Core.Application.Services
@@ -23,7 +24,7 @@ namespace RealStateApp.Core.Application.Services
         {
             if (await _repository.ExisteFavoritoAsync(dto.UsuarioId, dto.PropiedadFavoritaId))
             {
-                return null; 
+                return null;
             }
 
             Favorito entity = _mapper.Map<Favorito>(dto);
@@ -31,6 +32,13 @@ namespace RealStateApp.Core.Application.Services
             entity = await _repository.AddAsync(entity);
 
             return _mapper.Map<SaveFavoritoDTO>(entity);
+        }
+
+        // Usamos 'new' para satisfacer la interfaz de forma limpia
+        public new async Task<List<FavoritoDTO>> GetAllAsync()
+        {
+            var favoritos = await _repository.GetAllAsync();
+            return _mapper.Map<List<FavoritoDTO>>(favoritos);
         }
     }
 }

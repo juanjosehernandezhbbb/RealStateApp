@@ -1,0 +1,118 @@
+﻿@model IEnumerable<RealStateApp.Core.Application.ViewModels.Admin.PropertyTypeListViewModel>
+
+@{
+    ViewData["Title"] = "Mantenimiento de Tipos de Propiedades";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3 align-items-center">
+        <div class="col">
+            <h2 class="fw-bold text-dark">Mantenimiento de Tipos de Propiedades</h2>
+            <p class="text-muted">Consulta, crea, edita o elimina los tipos de propiedades disponibles en el sistema.</p>
+        </div>
+        <div class="col text-end">
+            <a asp-action="CrearTipoPropiedad" class="btn btn-primary fw-bold">
+                <i class="fa-solid fa-plus me-1"></i> Crear tipo de propiedad
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre del tipo de propiedad</th>
+                            <th>Descripción</th>
+                            <th class="text-center">Cantidad de propiedades asociadas</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@item.Nombre</td>
+                                    <td>@item.Descripcion</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary rounded-pill">@item.CantidadPropiedades</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a asp-action="EditarTipoPropiedad" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                            <i class="fa-solid fa-pen-to-square"></i> Editar
+                                        </a>
+
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                onclick="prepararEliminacion(@item.Id, '@item.Nombre')"
+                                                title="Eliminar">
+                                            <i class="fa-solid fa-trash"></i> Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No existen tipos de propiedades registrados.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal fade" id="modalEliminarTipo" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalEliminarLabel">Confirmación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3 text-danger">
+                    <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+                </div>
+                <p class="fs-6 text-muted mb-0">¿Está seguro que desea eliminar este tipo de propiedad y todas las propiedades asociadas?</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formEliminarTipo" method="post" asp-action="EliminarTipoPropiedad">
+                    <input type="hidden" id="tipoPropiedadIdInput" name="id" />
+                    <button type="submit" class="btn btn-danger px-4 fw-bold">Aceptar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function prepararEliminacion(id, nombre) {
+            const modal = new bootstrap.Modal(document.getElementById('modalEliminarTipo'));
+            document.getElementById('tipoPropiedadIdInput').value = id;
+            modal.show();
+        }
+    </script>
+}

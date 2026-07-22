@@ -1,0 +1,93 @@
+﻿@model RealStateApp.Core.Application.ViewModels.Admin.AdminHomeViewModel
+
+@{
+    ViewData["Title"] = "Home del Administrador";
+}
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="fw-bold text-dark">Panel Principal de Administración</h2>
+            <p class="text-muted">Resumen general de los indicadores del sistema.</p>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Indicadores -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
+        <!-- Propiedades Disponibles -->
+        <div class="col">
+            <div class="card border-0 shadow-sm bg-primary text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase fw-semibold">Propiedades Disponibles</h6>
+                    <h2 class="display-6 fw-bold mb-0">@Model.PropiedadesDisponibles</h2>
+                </div>
+            </div>
+        </div>
+        <!-- Propiedades Vendidas -->
+        <div class="col">
+            <div class="card border-0 shadow-sm bg-success text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase fw-semibold">Propiedades Vendidas</h6>
+                    <h2 class="display-6 fw-bold mb-0">@Model.PropiedadesVendidas</h2>
+                </div>
+            </div>
+        </div>
+        <!-- Agentes Activos -->
+        <div class="col">
+            <div class="card border-0 shadow-sm bg-info text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase fw-semibold">Agentes Activos</h6>
+                    <h2 class="display-6 fw-bold mb-0">@Model.AgentesActivos</h2>
+                </div>
+            </div>
+        </div>
+        <!-- Agentes Inactivos -->
+        <div class="col">
+            <div class="card border-0 shadow-sm bg-secondary text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase fw-semibold">Agentes Inactivos</h6>
+                    <h2 class="display-6 fw-bold mb-0">@Model.AgentesInactivos</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        <!-- Clientes Activos -->
+        <div class="col">
+            <div class="card border-0 shadow-sm border-start border-primary border-4 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small fw-bold">Clientes Activos</h6>
+                    <h3 class="fw-bold text-dark">@Model.ClientesActivos</h3>
+                </div>
+            </div>
+        </div>
+        <!-- Clientes Inactivos -->
+        <div class="col">
+            <div class="card border-0 shadow-sm border-start border-secondary border-4 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small fw-bold">Clientes Inactivos</h6>
+                    <h3 class="fw-bold text-dark">@Model.ClientesInactivos</h3>
+                </div>
+            </div>
+        </div>
+        <!-- Desarrolladores Activos -->
+        <div class="col">
+            <div class="card border-0 shadow-sm border-start border-success border-4 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small fw-bold">Desarrolladores Activos</h6>
+                    <h3 class="fw-bold text-dark">@Model.DesarrolladoresActivos</h3>
+                </div>
+            </div>
+        </div>
+        <!-- Desarrolladores Inactivos -->
+        <div class="col">
+            <div class="card border-0 shadow-sm border-start border-danger border-4 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small fw-bold">Desarrolladores Inactivos</h6>
+                    <h3 class="fw-bold text-dark">@Model.DesarrolladoresInactivos</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,143 @@
+﻿@model IEnumerable<RealStateApp.Core.Application.ViewModels.Admin.AgentListViewModel>
+
+@{
+    ViewData["Title"] = "Gestión de Agentes";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2 class="fw-bold text-dark">Gestión de Agentes Inmobiliarios</h2>
+            <p class="text-muted">Consulta, activa, inactiva o elimina los agentes registrados en el sistema.</p>
+        </div>
+    </div>
+
+    <!-- Alertas de éxito o error -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Apellido</th>
+                            <th>Correo electrónico</th>
+                            <th class="text-center">Propiedades</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var agente in Model)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@agente.Nombre</td>
+                                    <td>@agente.Apellido</td>
+                                    <td>@agente.Email</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary rounded-pill">@agente.CantidadPropiedades</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (agente.EstaActivo)
+                                        {
+                                            <span class="badge bg-success">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <!-- Botón que abre el Modal de Bootstrap en lugar del confirm nativo -->
+                                        <button type="button" class="btn btn-sm @(agente.EstaActivo ? "btn-outline-warning" : "btn-outline-success") me-1"
+                                                onclick="prepararCambioEstado('@agente.Id', @Json.Serialize(agente.EstaActivo))"
+                                                title="@(agente.EstaActivo ? "Inactivar" : "Activar")">
+                                            <i class="fa-solid @(agente.EstaActivo ? "fa-user-slash" : "fa-user-check")"></i> @(agente.EstaActivo ? "Inactivar" : "Activar")
+                                        </button>
+
+                                        <!-- Botón para Eliminar -->
+                                        <a asp-action="EliminarAgente" asp-route-id="@agente.Id" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                            <i class="fa-solid fa-trash"></i> Eliminar
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No hay agentes registrados en el sistema.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Bootstrap para Confirmar Cambio de Estado -->
+<div class="modal fade" id="modalCambioEstado" tabindex="-1" aria-labelledby="modalCambioEstadoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalCambioEstadoLabel">Confirmación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3 text-warning">
+                    <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+                </div>
+                <p class="fs-6 text-muted mb-0" id="modalMensajeTexto">¿Está seguro que desea cambiar el estado de este agente?</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+
+                <form id="formCambioEstado" method="post" asp-action="CambiarEstadoAgente">
+                    <input type="hidden" id="agenteIdInput" name="id" />
+                    <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnAceptarModal">Aceptar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function prepararCambioEstado(id, estaActivo) {
+            const modal = new bootstrap.Modal(document.getElementById('modalCambioEstado'));
+            const inputId = document.getElementById('agenteIdInput');
+            const mensajeTexto = document.getElementById('modalMensajeTexto');
+            const btnAceptar = document.getElementById('btnAceptarModal');
+
+            inputId.value = id;
+
+            if (estaActivo) {
+                mensajeTexto.textContent = "¿Está seguro que desea inactivar este agente?";
+                btnAceptar.className = "btn btn-warning px-4 fw-bold text-white";
+            } else {
+                mensajeTexto.textContent = "¿Está seguro que desea activar este agente?";
+                btnAceptar.className = "btn btn-success px-4 fw-bold";
+            }
+
+            modal.show();
+        }
+    </script>
+}

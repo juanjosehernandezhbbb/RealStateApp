@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.Options;
+﻿using MailKit.Net.Smtp;
+using MailKit.Security;
+using Microsoft.Extensions.Options;
+using MimeKit;
 using RealStateApp.Core.Application.Interfaces.Services;
 using RealStateApp.Persistance.Shared.Settings;
-using System.Net;
-using System.Net.Mail;
+using System;
 using System.Threading.Tasks;
 
 namespace RealStateApp.Persistance.Shared.Services
@@ -20,22 +22,35 @@ namespace RealStateApp.Persistance.Shared.Services
         {
             try
             {
-                var message = new MailMessage();
-                message.From = new MailAddress(_mailSettings.EmailFrom, _mailSettings.DisplayName);
-                message.To.Add(new MailAddress(to));
-                message.Subject = subject;
-                message.Body = body;
-                message.IsBodyHtml = true;
+                // 1. Crear el mensaje
+                var email = new MimeMessage();
+                email.Sender = MailboxAddress.Parse(_mailSettings.EmailFrom);
+                email.To.Add(MailboxAddress.Parse(to));
+                email.Subject = subject;
 
-                using var smtp = new SmtpClient(_mailSettings.SmtpHost, _mailSettings.SmtpPort);
-                smtp.Credentials = new NetworkCredential(_mailSettings.SmtpUser, _mailSettings.SmtpPass);
-                smtp.EnableSsl = true;
+                // 2. Construir el cuerpo en HTML
+                var builder = new BodyBuilder { HtmlBody = body };
+                email.Body = builder.ToMessageBody(); // <-- Corrección aquí
 
-                await smtp.SendMailAsync(message);
+                // 3. Conectar y enviar usando MailKit
+                using var smtp = new MailKit.Net.Smtp.SmtpClient();
+
+                // Conectar con STARTTLS en el puerto 587
+                await smtp.ConnectAsync(_mailSettings.SmtpHost, _mailSettings.SmtpPort, SecureSocketOptions.StartTls);
+
+                // Autenticar con tu correo real y la contraseña de aplicación
+                await smtp.AuthenticateAsync(_mailSettings.SmtpUser, _mailSettings.SmtpPass);
+
+                // Enviar el correo
+                await smtp.SendAsync(email);
+
+                // Desconectar limpiamente
+                await smtp.DisconnectAsync(true);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error enviando correo: {ex.Message}");
+                // Si ocurre un error, lo lanzará para que lo veamos en Visual Studio
+                throw new Exception($"Error SMTP con MailKit: {ex.Message}", ex);
             }
         }
     }

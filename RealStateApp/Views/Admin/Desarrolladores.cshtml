@@ -1,0 +1,145 @@
+﻿@model IEnumerable<RealStateApp.Core.Application.ViewModels.Admin.DeveloperListViewModel>
+
+@{
+    ViewData["Title"] = "Mantenimiento de Desarrolladores";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3 align-items-center">
+        <div class="col">
+            <h2 class="fw-bold text-dark">Mantenimiento de Desarrolladores</h2>
+            <p class="text-muted">Consulta, crea, edita o cambia el estado de los usuarios desarrolladores.</p>
+        </div>
+        <div class="col text-end">
+            <a asp-action="CrearDesarrollador" class="btn btn-primary fw-bold">
+                <i class="fa-solid fa-user-plus me-1"></i> Crear desarrollador
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Apellido</th>
+                            <th>Nombre de usuario</th>
+                            <th>Cédula</th>
+                            <th>Correo electrónico</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var dev in Model)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@dev.Nombre</td>
+                                    <td>@dev.Apellido</td>
+                                    <td>@dev.UserName</td>
+                                    <td>@dev.Cedula</td>
+                                    <td>@dev.Email</td>
+                                    <td class="text-center">
+                                        @if (dev.EstaActivo)
+                                        {
+                                            <span class="badge bg-success">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <a asp-action="EditarDesarrollador" asp-route-id="@dev.Id" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                            <i class="fa-solid fa-pen-to-square"></i> Editar
+                                        </a>
+
+                                        <button type="button" class="btn btn-sm @(dev.EstaActivo ? "btn-outline-warning" : "btn-outline-success")"
+                                                onclick="prepararCambioEstadoDev('@dev.Id', @Json.Serialize(dev.EstaActivo))"
+                                                title="@(dev.EstaActivo ? "Inactivar" : "Activar")">
+                                            <i class="fa-solid @(dev.EstaActivo ? "fa-user-slash" : "fa-user-check")"></i>
+                                            @(dev.EstaActivo ? "Inactivar" : "Activar")
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">No hay desarrolladores registrados en el sistema.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación de Estado -->
+<div class="modal fade" id="modalCambioEstadoDev" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalLabel">Confirmación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3 text-warning">
+                    <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+                </div>
+                <p class="fs-6 text-muted mb-0" id="modalMensajeTextoDev">¿Está seguro de cambiar el estado de este desarrollador?</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formCambioEstadoDev" method="post" asp-action="CambiarEstadoDesarrollador">
+                    <input type="hidden" id="devIdInput" name="id" />
+                    <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnAceptarModalDev">Aceptar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function prepararCambioEstadoDev(id, estaActivo) {
+            const modal = new bootstrap.Modal(document.getElementById('modalCambioEstadoDev'));
+            const inputId = document.getElementById('devIdInput');
+            const mensajeTexto = document.getElementById('modalMensajeTextoDev');
+            const btnAceptar = document.getElementById('btnAceptarModalDev');
+
+            inputId.value = id;
+
+            if (estaActivo) {
+                mensajeTexto.textContent = "¿Está seguro que desea inactivar este desarrollador?";
+                btnAceptar.className = "btn btn-warning px-4 fw-bold text-white";
+            } else {
+                mensajeTexto.textContent = "¿Está seguro que desea activar este desarrollador?";
+                btnAceptar.className = "btn btn-success px-4 fw-bold";
+            }
+
+            modal.show();
+        }
+    </script>
+}

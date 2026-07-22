@@ -1,0 +1,73 @@
+﻿@model IEnumerable<RealStateApp.Core.Application.DTOs.Propiedades.PropiedadDTO>
+
+@{
+    ViewData["Title"] = "Home del Agente";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Panel Principal - Mis Propiedades</h2>
+        <a asp-action="Mantenimiento" class="btn btn-primary">Ir a Mantenimiento de Propiedades</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-warning text-center py-4">
+            <p class="mb-0">No tiene propiedades registradas en este momento.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var item in Model)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        @if (item.ImagenesUrls != null && item.ImagenesUrls.Any())
+                        {
+                            <img src="@item.ImagenesUrls.First()" class="card-img-top" style="height: 200px; object-fit: cover;" alt="Propiedad">
+                        }
+                        else
+                        {
+                            <img src="https://via.placeholder.com/300x200?text=Sin+Imagen" class="card-img-top" style="height: 200px; object-fit: cover;" alt="Sin Imagen">
+                        }
+
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-secondary">@item.TipoPropiedadNombre</span>
+                                @if (item.Estado == "Vendida")
+                                {
+                                    <span class="badge bg-danger fs-6">Vendida</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success fs-6">Disponible</span>
+                                }
+                            </div>
+
+                            <h5 class="card-title text-primary">RD$ @item.Precio.ToString("N2")</h5>
+                            <p class="text-muted small mb-1"><strong>Código:</strong> @item.Codigo</p>
+                            <p class="card-text small text-truncate">@item.Descripcion</p>
+
+                            <ul class="list-unstyled small text-muted mb-3">
+                                <li> habitaciones |  baños |  mts²</li>
+                                <li><strong>Operación:</strong> @item.TipoVentaNombre</li>
+                            </ul>
+
+                            <a asp-action="Detalle" asp-route-id="@item.Id" class="btn btn-outline-primary w-100">Ver Detalle y Ofertas</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

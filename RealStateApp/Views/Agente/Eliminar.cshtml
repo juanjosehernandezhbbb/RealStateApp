@@ -1,0 +1,32 @@
+﻿@model RealStateApp.Core.Application.DTOs.Propiedades.PropiedadDTO
+
+@{
+    ViewData["Title"] = "Eliminar Propiedad";
+}
+
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center p-5">
+            <div class="mb-4 text-danger">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+            </div>
+
+            <h3 class="fw-bold mb-3">Confirmar Eliminación</h3>
+
+            <p class="text-muted mb-4">
+                ¿Está seguro que desea eliminar esta propiedad? <br />
+                Código: <strong>@Model.Codigo</strong> | Tipo: <strong>@Model.TipoPropiedadNombre</strong> <br />
+                <span class="small text-danger">Esta acción no se puede deshacer.</span>
+            </p>
+
+            <form asp-action="Eliminar" method="post">
+                <input type="hidden" asp-for="Id" />
+
+                <div class="d-flex justify-content-center gap-3">
+                    <a asp-action="Mantenimiento" class="btn btn-secondary px-4 fw-bold">Cancelar</a>
+                    <button type="submit" class="btn btn-danger px-4 fw-bold">Aceptar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,135 @@
+﻿@model IEnumerable<RealStateApp.Core.Application.DTOs.Propiedades.PropiedadDTO>
+@{
+    ViewData["Title"] = "Catálogo de Propiedades";
+}
+
+<div class="container my-4">
+    <!-- Hero / Banner de Bienvenida -->
+    <div class="p-4 mb-5 bg-white rounded-3 shadow-sm border text-center">
+        <h1 class="display-5 fw-bold text-primary mb-3">Encuentra el hogar de tus sueños</h1>
+        <p class="lead text-muted mx-auto" style="max-width: 700px;">
+            Explora el catálogo de propiedades, guarda tus favoritas y conecta con agentes profesionales.
+        </p>
+    </div>
+
+    <div class="row">
+        <!-- Sección de Filtros y Búsqueda (Sidebar Izquierdo) -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm border-0 p-3">
+                <h5 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-filter"></i> Buscar y Filtrar</h5>
+
+                <!-- Formulario de Búsqueda por Código -->
+                <form method="get" asp-action="Index" class="mb-4">
+                    <label class="form-label fw-semibold small">Código de Propiedad</label>
+                    <div class="input-group mb-2">
+                        <input type="text" name="codigoFiltro" value="@ViewBag.CodigoFiltro" class="form-control form-control-sm" placeholder="Ej: 123456" />
+                        <button class="btn btn-primary btn-sm" type="submit"><i class="fa-solid fa-search"></i></button>
+                    </div>
+                </form>
+
+                <hr />
+
+                <!-- Formulario de Filtros Combinados -->
+                <form method="get" asp-action="Index">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Tipo de Propiedad</label>
+                        <select name="tipoPropiedadId" class="form-select form-select-sm" asp-items="ViewBag.TiposPropiedad">
+                            <option value="">-- Todos --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Precio Mínimo (RD$)</label>
+                        <input type="number" step="0.01" name="precioMin" value="@ViewBag.PrecioMin" class="form-control form-control-sm" min="0" placeholder="Mínimo" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Precio Máximo (RD$)</label>
+                        <input type="number" step="0.01" name="precioMax" value="@ViewBag.PrecioMax" class="form-control form-control-sm" min="0" placeholder="Máximo" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Habitaciones</label>
+                        <input type="number" name="habitaciones" value="@ViewBag.Habitaciones" class="form-control form-control-sm" min="0" placeholder="Cant." />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Baños</label>
+                        <input type="number" name="banos" value="@ViewBag.Banos" class="form-control form-control-sm" min="0" placeholder="Cant." />
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm fw-bold">Filtrar</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Limpiar Filtros</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Listado de Propiedades (Derecha) -->
+        <div class="col-lg-9">
+            <h3 class="mb-4 fw-bold text-dark">Propiedades Disponibles</h3>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                    @foreach (var propiedad in Model)
+                    {
+                        <div class="col">
+                            <div class="card h-100 shadow-sm border-0 position-relative">
+                                <img src="@(propiedad.ImagenesUrls != null && propiedad.ImagenesUrls.Any() ? propiedad.ImagenesUrls.First() : "/images/no-image.png")"
+                                     class="card-img-top" style="height: 200px; object-fit: cover;" alt="Propiedad">
+
+                                <span class="position-absolute top-0 end-0 badge bg-success m-2 px-3 py-2">@propiedad.TipoVentaNombre</span>
+
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h5 class="card-title text-primary fw-bold mb-0">@propiedad.TipoPropiedadNombre</h5>
+                                        <small class="text-muted fw-semibold">Cód: @propiedad.Codigo</small>
+                                    </div>
+
+                                    <h4 class="text-dark fw-bold mb-3">RD$ @propiedad.Precio.ToString("N2")</h4>
+
+                                    <div class="row text-muted small mb-3 g-1">
+                                        <div class="col-4"><i class="fa-solid fa-bed"></i> @propiedad.CantidadHabitaciones habs</div>
+                                        <div class="col-4"><i class="fa-solid fa-bath"></i> @propiedad.CantidadBanos baños</div>
+                                        <div class="col-4"><i class="fa-solid fa-ruler-combined"></i> @propiedad.Tamano m²</div>
+                                    </div>
+
+                                    <div class="mt-auto d-flex gap-2">
+                                        <a asp-action="Details" asp-route-id="@propiedad.Id" class="btn btn-outline-primary btn-sm w-50 fw-semibold">
+                                            Ver Detalle
+                                        </a>
+
+                                        <form asp-action="ToggleFavorito" asp-route-propiedadId="@propiedad.Id" method="post" class="w-50 m-0">
+                                            @if (propiedad.EsFavorito)
+                                            {
+                                                <button type="submit" class="btn btn-danger btn-sm w-100 fw-semibold" title="Quitar de favoritos">
+                                                    <i class="fa-solid fa-heart"></i> Favorito
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-outline-danger btn-sm w-100 fw-semibold" title="Marcar como favorito">
+                                                    <i class="fa-solid fa-heart"></i> Favorito
+                                                </button>
+                                            }
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning text-center p-4 shadow-sm" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation fa-2x mb-2"></i>
+                    <h5 class="fw-bold">No se encontraron propiedades disponibles</h5>
+                    <p class="mb-0 text-muted">No hay propiedades que coincidan con los criterios de búsqueda o filtros seleccionados.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

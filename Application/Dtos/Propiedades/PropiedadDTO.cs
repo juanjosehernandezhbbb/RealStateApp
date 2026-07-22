@@ -18,11 +18,14 @@ namespace RealStateApp.Core.Application.DTOs.Propiedades
         public decimal Tamano { get; set; }
         public int CantidadHabitaciones { get; set; }
         public int CantidadBanos { get; set; }
-        public string Estado { get; set; } = null!; 
+        public string Estado { get; set; } = null!;
         public DateTime FechaCreacion { get; set; }
 
-       
         public List<string> ImagenesUrls { get; set; } = new();
         public List<string> Mejoras { get; set; } = new();
+
+        public List<int> MejorasIds { get; set; } = new List<int>();
+
+        public bool EsFavorito { get; set; }
     }
 }

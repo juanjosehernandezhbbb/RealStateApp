@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
 using RealStateApp.Core.Domain.Enums;
 using RealStateApp.Core.Application.DTOs.Propiedades;
-using RealStateApp.Core.Application.Exceptions; 
+using RealStateApp.Core.Application.Exceptions;
 using RealStateApp.Core.Application.Interfaces.Repositories;
 using RealStateApp.Core.Application.Interfaces.Services;
 using RealStateApp.Core.Domain.Entities;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace RealStateApp.Core.Application.Services
@@ -34,10 +36,29 @@ namespace RealStateApp.Core.Application.Services
 
             Propiedad entity = _mapper.Map<Propiedad>(dto);
 
-            entity.Codigo = await GenerarCodigoUnicoAsync(); 
+            entity.Codigo = await GenerarCodigoUnicoAsync();
             entity.Estado = EstadoPropiedad.Disponible;
             entity.FechaCreacion = DateTime.Now;
 
+            // 1. Mapear y asignar las Imágenes usando la propiedad de navegación 'Imagenes'
+            if (dto.ImagenesUrls != null && dto.ImagenesUrls.Any())
+            {
+                entity.Imagenes = dto.ImagenesUrls.Select(url => new PropiedadImagen
+                {
+                    ImagenUrl = url // Si en tu entidad PropiedadImagen la propiedad se llama diferente (ej: RutaImagen), ajusta este nombre
+                }).ToList();
+            }
+
+            // 2. Mapear y asignar las Mejoras usando la propiedad 'PropiedadMejoras'
+            if (dto.MejorasIds != null && dto.MejorasIds.Any())
+            {
+                entity.PropiedadMejoras = dto.MejorasIds.Select(mejoraId => new PropiedadMejora
+                {
+                    MejoraId = mejoraId
+                }).ToList();
+            }
+
+            // Al guardar 'entity', EF Core inserta automáticamente la propiedad y sus registros dependientes
             entity = await _repository.AddAsync(entity);
             return _mapper.Map<SavePropiedadDTO>(entity);
         }
@@ -54,6 +75,7 @@ namespace RealStateApp.Core.Application.Services
             if (propiedad.AgenteId != agenteId)
                 throw new UnauthorizedAccessException("No tiene permisos para modificar esta propiedad.");
 
+            // 1. Actualizar campos primitivos
             propiedad.TipoPropiedadId = dto.TipoPropiedadId;
             propiedad.TipoVentaId = dto.TipoVentaId;
             propiedad.Precio = dto.Precio;
@@ -61,6 +83,26 @@ namespace RealStateApp.Core.Application.Services
             propiedad.Tamano = dto.Tamano;
             propiedad.CantidadHabitaciones = dto.CantidadHabitaciones;
             propiedad.CantidadBanos = dto.CantidadBanos;
+
+            // 2. Actualizar Mejoras (reemplazar anteriores por las nuevas seleccionadas)
+            propiedad.PropiedadMejoras.Clear();
+            if (dto.MejorasIds != null && dto.MejorasIds.Any())
+            {
+                foreach (var mejoraId in dto.MejorasIds)
+                {
+                    propiedad.PropiedadMejoras.Add(new PropiedadMejora { PropiedadId = id, MejoraId = mejoraId });
+                }
+            }
+
+            // 3. Actualizar Imágenes (solo si el usuario subió fotos nuevas)
+            if (dto.ImagenesUrls != null && dto.ImagenesUrls.Any())
+            {
+                propiedad.Imagenes.Clear();
+                foreach (var url in dto.ImagenesUrls)
+                {
+                    propiedad.Imagenes.Add(new PropiedadImagen { PropiedadId = id, ImagenUrl = url });
+                }
+            }
 
             await _repository.UpdateAsync(propiedad, id);
         }
@@ -72,12 +114,12 @@ namespace RealStateApp.Core.Application.Services
 
             var propiedad = await _repository.GetByIdAsync(id);
             if (propiedad == null)
-                throw new NotFoundException("Propiedad no encontrada."); 
+                throw new NotFoundException("Propiedad no encontrada.");
 
             if (propiedad.AgenteId != agenteId)
                 throw new UnauthorizedAccessException("No tiene permisos para eliminar esta propiedad.");
 
-            await _repository.DeleteAsync(propiedad);
+            await _repository.DeleteConDependenciasAsync(id);
         }
 
         private async Task<string> GenerarCodigoUnicoAsync()
@@ -93,10 +135,9 @@ namespace RealStateApp.Core.Application.Services
             return codigo;
         }
 
-
         public async Task<PropiedadDTO> GetByCodeAsync(string codigo)
-         {
-            var propiedades = await _repository.GetAllAsync(); 
+        {
+            var propiedades = await _repository.GetAllAsync();
             var propiedad = propiedades.FirstOrDefault(p => p.Codigo == codigo);
             return _mapper.Map<PropiedadDTO>(propiedad);
         }
@@ -108,5 +149,10 @@ namespace RealStateApp.Core.Application.Services
             return _mapper.Map<List<PropiedadDTO>>(filtradas);
         }
 
+        public new async Task<List<PropiedadDTO>> GetAllAsync()
+        {
+            var propiedades = await _repository.GetAllAsync();
+            return _mapper.Map<List<PropiedadDTO>>(propiedades);
+        }
     }
 }

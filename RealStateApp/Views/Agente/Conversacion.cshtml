@@ -1,0 +1,58 @@
+﻿@model RealStateApp.Core.Application.DTOs.Mensajes.SaveMensajeDTO
+@using RealStateApp.Core.Application.DTOs.Mensajes
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "Conversación con Cliente";
+    var mensajes = ViewBag.Mensajes as List<MensajeDTO> ?? new List<MensajeDTO>();
+    var agenteId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+}
+
+<div class="container mt-4" style="max-width: 800px;">
+    <h2>Chat de la Propiedad</h2>
+    <hr />
+
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body" style="height: 400px; overflow-y: auto;">
+            @if (!mensajes.Any())
+            {
+                <div class="text-muted text-center my-auto pt-5">No hay mensajes en esta conversación todavía.</div>
+            }
+            else
+            {
+                @foreach (var msg in mensajes)
+                {
+                    bool esMio = msg.EmisorId == agenteId;
+                    string nombreMostrar = esMio ? "Tú (Agente)" : (msg.ClienteNombre ?? "Cliente");
+
+                    <div class="mb-3 d-flex @(esMio ? "justify-content-end" : "justify-content-start")">
+                        <div class="p-3 rounded @(esMio ? "bg-primary text-white" : "bg-light text-dark border")" style="max-width: 75%;">
+                            <small class="d-block fw-bold mb-1" style="font-size: 0.8rem;">
+                                @nombreMostrar
+                            </small>
+                            <p class="mb-1">@msg.Contenido</p>
+                            <small class="d-block text-end @(esMio ? "text-white-50" : "text-muted")" style="font-size: 0.7rem;">
+                                @msg.FechaEnvio.ToString("g")
+                            </small>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <form asp-action="EnviarRespuestaMensaje" method="post">
+        <input type="hidden" asp-for="PropiedadId" />
+        <input type="hidden" asp-for="ClienteId" />
+
+        <div class="input-group">
+            <input asp-for="Contenido" class="form-control" placeholder="Escribe tu respuesta aquí..." required autocomplete="off" />
+            <button type="submit" class="btn btn-primary">Enviar respuesta</button>
+        </div>
+        <span asp-validation-for="Contenido" class="text-danger"></span>
+    </form>
+
+    <div class="mt-3">
+        <a asp-action="Detalle" asp-route-id="@Model.PropiedadId" class="btn btn-secondary btn-sm">Volver al detalle</a>
+    </div>
+</div>

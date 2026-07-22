@@ -1,0 +1,49 @@
+﻿@model RealStateApp.ViewModels.Mejoras.SaveMejoraViewModel
+
+@{
+    ViewData["Title"] = "Crear Mejora";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 600px;">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <h3 class="fw-bold text-dark mb-3">Registrar Mejora</h3>
+            <p class="text-muted mb-4">Complete los campos para registrar una nueva mejora en el sistema.</p>
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form asp-action="Crear" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Nombre" class="form-label fw-semibold">Nombre de la mejora <span class="text-danger">*</span></label>
+                    <input asp-for="Nombre" class="form-control" placeholder="Ej. Piscina, Terraza..." />
+                    <span asp-validation-for="Nombre" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Descripcion" class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
+                    <textarea asp-for="Descripcion" class="form-control" rows="3" placeholder="Descripción general..."></textarea>
+                    <span asp-validation-for="Descripcion" class="text-danger small"></span>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" class="btn btn-secondary px-4 fw-bold">Volver atrás</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">Crear mejora</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

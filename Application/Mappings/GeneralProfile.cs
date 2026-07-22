@@ -52,15 +52,23 @@ namespace RealStateApp.Core.Application.Mappings
                 .ForMember(dest => dest.AgenteNombre, opt => opt.MapFrom(src => $"{src.Agente.Nombre} {src.Agente.Apellido}"))
                 .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Estado.ToString()))
                 .ForMember(dest => dest.ImagenesUrls, opt => opt.MapFrom(src => src.Imagenes.Select(i => i.ImagenUrl).ToList()))
-                .ForMember(dest => dest.Mejoras, opt => opt.MapFrom(src => src.PropiedadMejoras.Select(pm => pm.Mejora.Nombre).ToList()));
+                .ForMember(dest => dest.Mejoras, opt => opt.MapFrom(src => src.PropiedadMejoras.Select(pm => pm.Mejora.Nombre).ToList()))
+                .ForMember(dest => dest.MejorasIds, opt => opt.MapFrom(src => src.PropiedadMejoras.Select(pm => pm.MejoraId).ToList()));
 
-            CreateMap<SavePropiedadDTO, Propiedad>()
-                .ForMember(dest => dest.Estado, opt => opt.Ignore()) 
-                .ForMember(dest => dest.Codigo, opt => opt.Ignore()) 
+            CreateMap<Propiedad, SavePropiedadDTO>()
+                .ForMember(dest => dest.MejorasIds, opt => opt.MapFrom(src => src.PropiedadMejoras.Select(pm => pm.MejoraId).ToList()))
+                .ForMember(dest => dest.ImagenesUrls, opt => opt.MapFrom(src => src.Imagenes.Select(i => i.ImagenUrl).ToList()))
+                .ReverseMap()
+                .ForMember(dest => dest.Estado, opt => opt.Ignore())
+                .ForMember(dest => dest.Codigo, opt => opt.Ignore())
                 .ForMember(dest => dest.PropiedadMejoras, opt => opt.MapFrom(src =>
-                    src.MejorasIds.Select(id => new PropiedadMejora { MejoraId = id }).ToList()))
+                    src.MejorasIds != null
+                        ? src.MejorasIds.Select(id => new PropiedadMejora { MejoraId = id }).ToList()
+                        : new List<PropiedadMejora>())) // <-- Protección contra NULL
                 .ForMember(dest => dest.Imagenes, opt => opt.MapFrom(src =>
-                    src.ImagenesUrls.Select(url => new PropiedadImagen { ImagenUrl = url }).ToList()));
+                    src.ImagenesUrls != null
+                        ? src.ImagenesUrls.Select(url => new PropiedadImagen { ImagenUrl = url }).ToList()
+                        : new List<PropiedadImagen>())); // <-- Protección contra NULL
             #endregion
 
             #region Ofertas
@@ -69,7 +77,8 @@ namespace RealStateApp.Core.Application.Mappings
                 .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Estado.ToString()));
 
             CreateMap<SaveOfertaDTO, Oferta>()
-                .ForMember(dest => dest.Estado, opt => opt.Ignore());
+                .ForMember(dest => dest.Estado, opt => opt.Ignore())
+                .ReverseMap(); // <-- Agregando esto habilitas el mapeo de Oferta -> SaveOfertaDTO
             #endregion
 
             #region Mensajes

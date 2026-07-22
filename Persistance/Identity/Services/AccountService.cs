@@ -51,10 +51,25 @@ namespace RealStateApp.Persistance.Identity.Services
             }
 
             var result = await _signInManager.PasswordSignInAsync(user.UserName, request.Password, false, lockoutOnFailure: false);
+
             if (!result.Succeeded)
             {
                 response.HasError = true;
-                response.Error = "Los datos de acceso son inválidos.";
+
+                // Evaluamos la causa exacta del rechazo:
+                if (result.IsNotAllowed)
+                {
+                    response.Error = "Identity bloqueó el acceso. (Revisa si en Program.cs se exige confirmar teléfono u otro dato).";
+                }
+                else if (result.IsLockedOut)
+                {
+                    response.Error = "La cuenta está bloqueada temporalmente.";
+                }
+                else
+                {
+                    response.Error = "La contraseña es incorrecta. Intenta registrar un usuario de prueba nuevo para asegurarte de la contraseña.";
+                }
+
                 return response;
             }
 
@@ -66,21 +81,32 @@ namespace RealStateApp.Persistance.Identity.Services
             }
 
             var rolesList = await _userManager.GetRolesAsync(user);
+
+            // Validación de rol válido asignado
+            if (rolesList == null || rolesList.Count == 0)
+            {
+                response.HasError = true;
+                response.Error = "El usuario no tiene un rol válido asignado. Póngase en contacto con un administrador.";
+                return response;
+            }
+
             response.Id = user.Id;
             response.Email = user.Email;
             response.UserName = user.UserName;
             response.Roles = rolesList.ToList();
             response.IsActive = user.EstaActivo;
 
-            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            // --- ACTUALIZACIÓN A LA VERSIÓN MODERNA (8.x) ---
+            // Usamos JsonWebTokenHandler en lugar del obsoleto JwtSecurityTokenHandler
+            var tokenHandler = new Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler();
             var key = System.Text.Encoding.ASCII.GetBytes(_jwtSettings.Key);
             var claims = new List<System.Security.Claims.Claim>
-    {
-        new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.UserName),
-        new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email),
-        new System.Security.Claims.Claim("uid", user.Id)
-    };
+            {
+                new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.UserName),
+                new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email),
+                new System.Security.Claims.Claim("uid", user.Id)
+            };
 
             foreach (var role in rolesList) claims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, role));
 
@@ -93,16 +119,34 @@ namespace RealStateApp.Persistance.Identity.Services
                 SigningCredentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(key), Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256Signature)
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            response.Token = tokenHandler.WriteToken(token);
+            // En la nueva versión, CreateToken genera y devuelve directamente el string del token.
+            // Ya no es necesario usar un WriteToken().
+            response.Token = tokenHandler.CreateToken(tokenDescriptor);
 
             return response;
         }
 
         public async Task<string> RegisterUserAsync(SaveUsuarioDTO request, string origin)
         {
-            if (await _userManager.Users.AnyAsync(u => u.Cedula == request.Cedula))
+            // 1. Validar si el nombre de usuario ya existe
+            var userByUserName = await _userManager.FindByNameAsync(request.UserName);
+            if (userByUserName != null)
+            {
+                return "Ya existe un usuario registrado con este nombre de usuario.";
+            }
+
+            // 2. Validar si el correo electrónico ya existe
+            var userByEmail = await _userManager.FindByEmailAsync(request.Email);
+            if (userByEmail != null)
+            {
+                return "Ya existe un usuario registrado con este correo electrónico.";
+            }
+
+            // 3. Validar cédula única (si fue ingresada)
+            if (!string.IsNullOrWhiteSpace(request.Cedula) && await _userManager.Users.AnyAsync(u => u.Cedula == request.Cedula))
+            {
                 return "Ya existe un usuario registrado con esta cédula.";
+            }
 
             var user = new ApplicationUser
             {
@@ -112,29 +156,75 @@ namespace RealStateApp.Persistance.Identity.Services
                 Apellido = request.Apellido,
                 Cedula = request.Cedula,
                 Telefono = request.Telefono,
-                FotoPerfilUrl = request.FotoPerfilUrl, 
-                FechaRegistro = DateTime.Now,          
+                FotoPerfilUrl = request.FotoPerfilUrl,
+                FechaRegistro = DateTime.Now,
 
+                // Regla: Clientes y Agentes inician inactivos. Administradores o Desarrolladores inician activos.
                 EstaActivo = request.Rol == "Administrador" || request.Rol == "Desarrollador"
             };
+
             var result = await _userManager.CreateAsync(user, request.Password);
             if (result.Succeeded)
             {
                 await _userManager.AddToRoleAsync(user, request.Rol);
 
+                // Flujo de activación por correo exclusivo para Clientes
                 if (request.Rol == "Cliente")
                 {
                     var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
+                    var activationUrl = $"{origin}/Account/ConfirmEmail?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+                    string cuerpoCorreo = $@"
+                        <h3>Hola {user.Nombre},</h3>
+                        <p>Su cuenta ha sido registrada correctamente en RealEstateApp.</p>
+                        <p>Para activar su usuario y poder iniciar sesión, utilice el siguiente enlace:</p>
+                        <p><a href='{activationUrl}' style='padding: 10px 18px; background-color: #0d6efd; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;'>Activar Cuenta</a></p>
+                        <p>Si no puede hacer clic en el botón, copie y pegue la siguiente URL en su navegador:</p>
+                        <p>{activationUrl}</p>
+                        <br/>
+                        <p><small>Si usted no realizó este registro, puede ignorar este mensaje.</small></p>";
+
                     await _emailService.SendAsync(
                         user.Email,
-                        "Confirmación de Cuenta",
-                        $"Su cuenta ha sido creada. Utilice el siguiente token para confirmarla: {token}");
+                        "Activación de cuenta en RealEstateApp",
+                        cuerpoCorreo);
                 }
 
                 return "Success";
             }
-            return result.Errors.FirstOrDefault()?.Description;
+
+            // Traduce y unifica los errores de Identity al español
+            var erroresTraducidos = result.Errors.Select(e => e.Code switch
+            {
+                "PasswordTooShort" => "La contraseña es demasiado corta.",
+                "PasswordRequiresNonAlphanumeric" => "La contraseña debe tener al menos un carácter no alfanumérico.",
+                "PasswordRequiresDigit" => "La contraseña debe tener al menos un dígito ('0'-'9').",
+                "PasswordRequiresUpper" => "La contraseña debe tener al menos una letra mayúscula ('A'-'Z').",
+                "PasswordRequiresLower" => "La contraseña debe tener al menos una letra minúscula ('a'-'z').",
+                _ => e.Description
+            });
+
+            return string.Join(" ", erroresTraducidos);
+        }
+
+        public async Task<string> ConfirmEmailAsync(string userId, string token)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return "El usuario especificado no existe.";
+            }
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                user.EstaActivo = true;
+                await _userManager.UpdateAsync(user);
+                return "Success";
+            }
+
+            return "Ocurrió un error al activar la cuenta.";
         }
 
         public async Task<List<UsuarioDTO>> GetAllUsersAsync()
@@ -247,6 +337,42 @@ namespace RealStateApp.Persistance.Identity.Services
             }
 
             await _userManager.DeleteAsync(user);
+        }
+
+        public async Task<string> SendVerificationEmailAsync(string emailOrUserName, string origin)
+        {
+            var user = await _userManager.FindByEmailAsync(emailOrUserName) ??
+                       await _userManager.FindByNameAsync(emailOrUserName);
+
+            if (user == null)
+            {
+                return "No se encontró ningún usuario registrado con esos datos.";
+            }
+
+            if (await _userManager.IsEmailConfirmedAsync(user))
+            {
+                return "Este usuario ya ha confirmado su correo electrónico.";
+            }
+
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var activationUrl = $"{origin}/Account/ConfirmEmail?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+            string cuerpoCorreo = $@"
+        <h3>Hola {user.Nombre},</h3>
+        <p>Ha solicitado un nuevo enlace para activar su cuenta en RealEstateApp.</p>
+        <p>Para activar su usuario y poder iniciar sesión, utilice el siguiente enlace:</p>
+        <p><a href='{activationUrl}' style='padding: 10px 18px; background-color: #0d6efd; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;'>Activar Cuenta</a></p>
+        <p>Si no puede hacer clic en el botón, copie y pegue la siguiente URL en su navegador:</p>
+        <p>{activationUrl}</p>
+        <br/>
+        <p><small>Si usted no solicitó este cambio, puede ignorar este mensaje.</small></p>";
+
+            await _emailService.SendAsync(
+                user.Email,
+                "Reenvío - Activación de cuenta en RealEstateApp",
+                cuerpoCorreo);
+
+            return "Success";
         }
     }
 }
