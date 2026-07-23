@@ -154,5 +154,17 @@ namespace RealStateApp.Core.Application.Services
             var propiedades = await _repository.GetAllAsync();
             return _mapper.Map<List<PropiedadDTO>>(propiedades);
         }
+
+        public async Task<List<PropiedadDTO>> GetPublicPropiedadesAsync()
+        {
+            var propiedades = await _repository.GetAllAsync();
+
+            // Filtramos las que estén disponibles y cuyo agente exista y esté activo
+            var propiedadesPublicas = propiedades
+                .Where(p => p.Estado == EstadoPropiedad.Disponible && p.Agente != null && p.Agente.EstaActivo)
+                .ToList();
+
+            return _mapper.Map<List<PropiedadDTO>>(propiedadesPublicas);
+        }
     }
 }

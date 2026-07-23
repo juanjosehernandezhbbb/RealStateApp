@@ -50,13 +50,21 @@ namespace RealStateApp.Persistance.Identity.Services
                 return response;
             }
 
+            // 1. Validar si está activo ANTES de intentar el login o generar cookies
+            if (!user.EstaActivo)
+            {
+                response.HasError = true;
+                response.Error = "El usuario se encuentra inactivo y no puede iniciar sesión.";
+                return response;
+            }
+
+            // 2. Intentar el inicio de sesión una vez confirmado que está activo
             var result = await _signInManager.PasswordSignInAsync(user.UserName, request.Password, false, lockoutOnFailure: false);
 
             if (!result.Succeeded)
             {
                 response.HasError = true;
 
-                // Evaluamos la causa exacta del rechazo:
                 if (result.IsNotAllowed)
                 {
                     response.Error = "Identity bloqueó el acceso. (Revisa si en Program.cs se exige confirmar teléfono u otro dato).";
@@ -73,16 +81,8 @@ namespace RealStateApp.Persistance.Identity.Services
                 return response;
             }
 
-            if (!user.EstaActivo)
-            {
-                response.HasError = true;
-                response.Error = "El usuario se encuentra inactivo y no puede iniciar sesión.";
-                return response;
-            }
-
             var rolesList = await _userManager.GetRolesAsync(user);
 
-            // Validación de rol válido asignado
             if (rolesList == null || rolesList.Count == 0)
             {
                 response.HasError = true;
@@ -96,17 +96,15 @@ namespace RealStateApp.Persistance.Identity.Services
             response.Roles = rolesList.ToList();
             response.IsActive = user.EstaActivo;
 
-            // --- ACTUALIZACIÓN A LA VERSIÓN MODERNA (8.x) ---
-            // Usamos JsonWebTokenHandler en lugar del obsoleto JwtSecurityTokenHandler
             var tokenHandler = new Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler();
             var key = System.Text.Encoding.ASCII.GetBytes(_jwtSettings.Key);
             var claims = new List<System.Security.Claims.Claim>
-            {
-                new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.UserName),
-                new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email),
-                new System.Security.Claims.Claim("uid", user.Id)
-            };
+    {
+        new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.UserName),
+        new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email),
+        new System.Security.Claims.Claim("uid", user.Id)
+    };
 
             foreach (var role in rolesList) claims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, role));
 
@@ -119,8 +117,6 @@ namespace RealStateApp.Persistance.Identity.Services
                 SigningCredentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(key), Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256Signature)
             };
 
-            // En la nueva versión, CreateToken genera y devuelve directamente el string del token.
-            // Ya no es necesario usar un WriteToken().
             response.Token = tokenHandler.CreateToken(tokenDescriptor);
 
             return response;

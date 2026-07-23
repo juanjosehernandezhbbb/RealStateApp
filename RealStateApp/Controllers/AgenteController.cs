@@ -69,11 +69,9 @@ public class AgenteController : Controller
     // ==========================================
     [Authorize(Roles = "Agente")]
     [HttpGet]
-    public async Task<IActionResult> Panel()
+    public IActionResult Panel()
     {
-        string agenteId = GetAgenteId();
-        var propiedades = await _propiedadService.GetPropiedadesByAgenteAsync(agenteId);
-        return View(propiedades);
+        return RedirectToAction(nameof(Index));
     }
 
     // ==========================================
@@ -457,12 +455,21 @@ public class AgenteController : Controller
     // ==========================================
     // 10. MÓDULO MI PERFIL
     // ==========================================
+    // 1. VER PERFIL (Solo lectura)
     [Authorize(Roles = "Agente")]
     [HttpGet]
     public async Task<IActionResult> Perfil()
     {
         string agenteId = GetAgenteId();
-        return View();
+        var agente = await _userManager.FindByIdAsync(agenteId);
+
+        if (agente == null)
+        {
+            TempData["Error"] = "No se encontró información del usuario.";
+            return RedirectToAction(nameof(Panel));
+        }
+
+        return View(agente); // Asegúrate de pasar el modelo a la vista
     }
 
     [Authorize(Roles = "Agente")]
@@ -488,5 +495,86 @@ public class AgenteController : Controller
         }
 
         return RedirectToAction(nameof(Panel));
+    }
+
+    [Authorize(Roles = "Agente")]
+    [HttpGet]
+    public async Task<IActionResult> EditarPerfil()
+    {
+        string agenteId = GetAgenteId();
+        var agente = await _userManager.FindByIdAsync(agenteId);
+
+        if (agente == null)
+        {
+            return RedirectToAction(nameof(Perfil));
+        }
+
+        // Puedes mapear los datos a un ViewModel si lo prefieres para pre-llenar losinputs
+        return View(agente);
+    }
+
+    // 3. GUARDAR CAMBIOS (POST)
+    [Authorize(Roles = "Agente")]
+    [HttpPost]
+    public async Task<IActionResult> EditarPerfil(string nombre, string apellido, string telefono, IFormFile foto)
+    {
+        string agenteId = GetAgenteId();
+        var agente = await _userManager.FindByIdAsync(agenteId);
+
+        if (agente == null)
+        {
+            TempData["Error"] = "Usuario no encontrado.";
+            return RedirectToAction(nameof(Panel));
+        }
+
+        if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(apellido) || string.IsNullOrWhiteSpace(telefono))
+        {
+            TempData["Error"] = "Todos los campos obligatorios deben ser completados.";
+            return View(agente);
+        }
+
+        try
+        {
+            agente.Nombre = nombre;
+            agente.Apellido = apellido;
+            agente.PhoneNumber = telefono;
+
+            // Lógica para guardar la foto de perfil si se subió una nueva
+            if (foto != null && foto.Length > 0)
+            {
+                string basePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", "users");
+
+                if (!Directory.Exists(basePath))
+                {
+                    Directory.CreateDirectory(basePath);
+                }
+
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(foto.FileName);
+                string filePath = Path.Combine(basePath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await foto.CopyToAsync(stream);
+                }
+
+                // Nota: Cambia 'FotoUrl' por el nombre exacto de la propiedad en tu clase ApplicationUser si es diferente (ej. Foto, Imagen, etc.)
+                agente.FotoPerfilUrl = $"/images/users/{fileName}";
+            }
+
+            var resultado = await _userManager.UpdateAsync(agente);
+            if (resultado.Succeeded)
+            {
+                TempData["Success"] = "Su perfil fue actualizado correctamente.";
+                return RedirectToAction(nameof(Perfil));
+            }
+
+            TempData["Error"] = "No se pudieron guardar los cambios.";
+        }
+        catch (System.Exception)
+        {
+            TempData["Error"] = "Ocurrió un error al intentar actualizar su perfil.";
+        }
+
+        return View(agente);
     }
 }

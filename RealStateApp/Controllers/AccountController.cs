@@ -238,7 +238,15 @@ namespace RealStateApp.WebApp.Controllers
             }
             else
             {
-                TempData["MensajeError"] = result;
+                // Si el correo ya está confirmado (caso típico de los agentes inactivos por admin)
+                if (result.Contains("confirmado", StringComparison.OrdinalIgnoreCase))
+                {
+                    TempData["MensajeError"] = "Su cuenta ya está confirmada. Si es Agente, recuerde que debe esperar a que un Administrador active su cuenta.";
+                }
+                else
+                {
+                    TempData["MensajeError"] = result;
+                }
             }
 
             return RedirectToAction("Login");

@@ -14,5 +14,7 @@ namespace RealStateApp.Core.Application.Interfaces.Services
         Task<List<PropiedadDTO>> GetPropiedadesByAgenteAsync(string agenteId);
 
         Task<List<PropiedadDTO>> GetAllAsync();
+
+        Task<List<PropiedadDTO>> GetPublicPropiedadesAsync();
     }
 }

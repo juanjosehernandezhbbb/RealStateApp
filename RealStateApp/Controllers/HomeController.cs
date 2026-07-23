@@ -52,12 +52,10 @@ public class HomeController : Controller
         // HOME PÚBLICO (Usuarios no autenticados)
         // ==========================================
 
-        var todasLasPropiedades = await _propiedadService.GetAllDTOsAsync();
+        // Obtenemos directamente las propiedades públicas (disponibles y con agentes activos)
+        var propiedades = await _propiedadService.GetPublicPropiedadesAsync();
 
-        var propiedades = todasLasPropiedades
-            .Where(p => p.Estado != null && p.Estado.ToString().Equals("Disponible", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
+        // Aplicamos los filtros de búsqueda si el usuario ingresó parámetros
         if (!string.IsNullOrEmpty(codigoFiltro))
         {
             propiedades = propiedades.Where(p => p.Codigo != null && p.Codigo.Contains(codigoFiltro, StringComparison.OrdinalIgnoreCase)).ToList();
