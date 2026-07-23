@@ -1,120 +1,203 @@
 ﻿@model RealStateApp.Core.Application.ViewModels.Cliente.ClientePropiedadDetailViewModel
-@using System.Security.Claims
 
 @{
-    ViewData["Title"] = "Detalles de la Propiedad";
-
-    // Forma segura de obtener el Claim sin requerir métodos de extensión adicionales
-    string currentUserId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "";
-
-    // Lógica para habilitar/deshabilitar el botón de ofertas
-    bool puedeOfertar = Model.Propiedad.Estado == "Disponible"
-                     && !Model.TieneOfertaAceptadaGlobal
-                     && !Model.TieneOfertaPendiente;
+    ViewData["Title"] = "Detalle de Propiedad";
+    bool estaDisponible = Model.Propiedad.Estado == "Disponible";
 }
 
-<div class="container my-4">
-    <!-- Alertas de TempData (Éxito o Error) -->
+<div class="container mt-4 pb-5">
+    <!-- Alertas -->
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            @TempData["Success"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
     @if (TempData["Error"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+            @TempData["Error"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
     <div class="row">
-        <!-- SECCIÓN IZQUIERDA: DETALLES DE LA PROPIEDAD -->
-        <div class="col-md-7">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">@Model.Propiedad.Codigo</h4>
-                    <span class="badge bg-light text-dark fs-6">@Model.Propiedad.Estado</span>
-                </div>
-                <div class="card-body">
-                    <h3 class="card-title text-success fw-bold">RD$ @Model.Propiedad.Precio.ToString("N2")</h3>
-                    <p class="text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> Propiedad en venta</p>
+        <!-- Columna Izquierda: Información, Galería, Mejoras, Chat y Ofertas -->
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2>@Model.Propiedad.TipoPropiedadNombre - @Model.Propiedad.TipoVentaNombre</h2>
+                <span class="badge @(estaDisponible ? "bg-success" : "bg-secondary") fs-6">@Model.Propiedad.Estado</span>
+            </div>
+            <p class="text-muted"><i class="fa-solid fa-code"></i> Código: <strong>@Model.Propiedad.Codigo</strong></p>
 
-                    <hr />
-                    <h5>Descripción</h5>
-                    <p>@Model.Propiedad.Descripcion</p>
-
-                    <div class="row mt-4">
-                        <div class="col-6 mb-3">
-                            <strong><i class="bi bi-house-door"></i> Tipo:</strong> @Model.Propiedad.TipoPropiedadNombre
-                        </div>
-                        <div class="col-6 mb-3">
-                            <strong><i class="bi bi-tag"></i> Venta:</strong> @Model.Propiedad.TipoVentaNombre
-                        </div>
-                        <div class="col-6 mb-3">
-                            <strong><i class="bi bi-door-open"></i> Habitaciones:</strong> @Model.Propiedad.CantidadHabitaciones
-                        </div>
-                        <div class="col-6 mb-3">
-                            <strong><i class="bi bi-droplet"></i> Baños:</strong> @Model.Propiedad.CantidadBanos
-                        </div>
-                        <div class="col-6 mb-3">
-                            <strong><i class="bi bi-arrows-fullscreen"></i> Tamaño:</strong> @Model.Propiedad.Tamano m²
-                        </div>
+            <!-- Carrusel de Imágenes -->
+            @if (Model.Propiedad.ImagenesUrls != null && Model.Propiedad.ImagenesUrls.Any())
+            {
+                <div id="propertyCarousel" class="carousel slide mb-4 shadow-sm rounded overflow-hidden" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        @for (int i = 0; i < Model.Propiedad.ImagenesUrls.Count; i++)
+                        {
+                            <div class="carousel-item @(i == 0 ? "active" : "")">
+                                <img src="@Model.Propiedad.ImagenesUrls[i]" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="Imagen de la propiedad">
+                            </div>
+                        }
                     </div>
+                    @if (Model.Propiedad.ImagenesUrls.Count > 1)
+                    {
+                        <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Anterior</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Siguiente</span>
+                        </button>
+                    }
+                </div>
+            }
+
+            <!-- Descripción -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h4><i class="fa-solid fa-align-left text-primary me-2"></i>Descripción</h4>
+                    <p class="mb-0">@Model.Propiedad.Descripcion</p>
                 </div>
             </div>
 
-            <!-- SECCIÓN: OFERTAS DEL CLIENTE -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Mis Ofertas</h5>
+            <!-- Características -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h4><i class="fa-solid fa-list-check text-primary me-2"></i>Características</h4>
+                    <ul class="list-group list-group-flush mt-3">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-dollar-sign text-muted me-2"></i>Precio</span>
+                            <strong>$ @Model.Propiedad.Precio.ToString("N2")</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-ruler-combined text-muted me-2"></i>Tamaño</span>
+                            <strong>@Model.Propiedad.Tamano m²</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-bed text-muted me-2"></i>Habitaciones</span>
+                            <strong>@Model.Propiedad.CantidadHabitaciones</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-bath text-muted me-2"></i>Baños</span>
+                            <strong>@Model.Propiedad.CantidadBanos</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Mejoras -->
+            @if (Model.Propiedad.Mejoras != null && Model.Propiedad.Mejoras.Any())
+            {
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <h4><i class="fa-solid fa-star text-warning me-2"></i>Mejoras y Características Adicionales</h4>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            @foreach (var mejora in Model.Propiedad.Mejoras)
+                            {
+                                <span class="badge bg-light text-dark border p-2"><i class="fa-solid fa-check text-success me-1"></i> @mejora</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Sección de Chat -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h4 class="mb-0"><i class="fa-solid fa-comments text-success me-2"></i>Chat con el Agente</h4>
+                </div>
+                <div class="card-body">
+                    @if (!estaDisponible)
+                    {
+                        <div class="alert alert-warning mb-3">La propiedad ya no está disponible, por lo que el chat se encuentra deshabilitado para nuevos mensajes.</div>
+                    }
+
+                    <!-- Historial de Mensajes -->
+                    <div class="border rounded p-3 mb-3 bg-light" style="max-height: 350px; overflow-y: auto;">
+                        @if (Model.Mensajes != null && Model.Mensajes.Any())
+                        {
+                            @foreach (var msg in Model.Mensajes)
+                            {
+                                bool esCliente = msg.EmisorId == msg.ClienteId;
+                                <div class="mb-3 d-flex flex-column @(esCliente ? "align-items-end" : "align-items-start")">
+                                    <div class="p-3 rounded shadow-sm @(esCliente ? "bg-primary text-white" : "bg-white border")" style="max-width: 75%;">
+                                        <p class="mb-1">@msg.Contenido</p>
+                                        <small class="@(esCliente ? "text-white-50" : "text-muted")" style="font-size: 0.75rem;">@msg.FechaEnvio.ToString("dd/MM/yyyy HH:mm")</small>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted text-center mb-0">No hay mensajes en esta conversación todavía. ¡Escribe el primero!</p>
+                        }
+                    </div>
+
+                    <!-- Formulario de Envío de Mensaje -->
+                    @if (estaDisponible)
+                    {
+                        <form asp-controller="Cliente" asp-action="EnviarMensaje" method="post">
+                            <input type="hidden" name="propiedadId" value="@Model.Propiedad.Id" />
+                            <div class="input-group">
+                                <input type="text" name="mensajeTexto" class="form-control" placeholder="Escribe tu mensaje al agente..." required />
+                                <button type="submit" class="btn btn-success"><i class="fa-solid fa-paper-plane me-1"></i> Enviar mensaje</button>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <!-- Sección de Ofertas Realizadas -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fa-solid fa-hand-holding-dollar text-primary me-2"></i>Mis Ofertas</h4>
+
+                    @{
+                        bool tienePendiente = Model.TieneOfertaPendiente;
+                        bool tieneAceptadaGlobal = Model.TieneOfertaAceptadaGlobal;
+                        bool puedeOfertar = estaDisponible && !tienePendiente && !tieneAceptadaGlobal;
+                    }
 
                     @if (puedeOfertar)
                     {
-                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalOferta">
-                            Enviar nueva oferta
+                        <button type="button" class="btn btn-primary btn-sm fw-bold rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalOferta">
+                            <i class="fa-solid fa-plus me-1"></i> Enviar nueva oferta
                         </button>
                     }
                     else
                     {
-                        <button type="button" class="btn btn-sm btn-secondary" disabled>
+                        <button type="button" class="btn btn-secondary btn-sm fw-bold rounded-pill px-3" disabled title="No disponible para ofertar">
                             Enviar nueva oferta
                         </button>
                     }
                 </div>
                 <div class="card-body">
-                    <!-- Mensajes de validación de ofertas requeridos por el documento -->
-                    @if (!puedeOfertar)
+                    @if (!estaDisponible)
                     {
-                        <div class="alert alert-warning mb-3 small">
-                            @if (Model.Propiedad.Estado != "Disponible")
-                            {
-                                <span>Esta propiedad ya no se encuentra disponible para recibir ofertas.</span>
-                            }
-                            else if (Model.TieneOfertaAceptadaGlobal)
-                            {
-                                <span>Esta propiedad ya tiene una oferta aceptada y no permite nuevas ofertas.</span>
-                            }
-                            else if (Model.TieneOfertaPendiente)
-                            {
-                                <span>Ya tiene una oferta pendiente para esta propiedad.</span>
-                            }
-                        </div>
+                        <div class="alert alert-danger mb-3">Esta propiedad ya no se encuentra disponible para recibir ofertas.</div>
+                    }
+                    else if (tieneAceptadaGlobal)
+                    {
+                        <div class="alert alert-warning mb-3">Esta propiedad ya tiene una oferta aceptada y no permite nuevas ofertas.</div>
+                    }
+                    else if (tienePendiente)
+                    {
+                        <div class="alert alert-info mb-3">Ya tiene una oferta pendiente para esta propiedad.</div>
                     }
 
-                    @if (!Model.Ofertas.Any())
-                    {
-                        <p class="text-muted text-center my-3">No has realizado ninguna oferta por esta propiedad.</p>
-                    }
-                    else
+                    <!-- Listado de Ofertas -->
+                    @if (Model.Ofertas != null && Model.Ofertas.Any())
                     {
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
-                                <thead>
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Fecha</th>
+                                        <th>Fecha y Hora</th>
                                         <th>Monto Ofertado</th>
                                         <th>Estado</th>
                                     </tr>
@@ -122,141 +205,100 @@
                                 <tbody>
                                     @foreach (var oferta in Model.Ofertas)
                                     {
+                                        string badgeClass = oferta.Estado switch
+                                        {
+                                            "Pendiente" => "bg-warning text-dark",
+                                            "Aceptada" => "bg-success",
+                                            "Rechazada" => "bg-danger",
+                                            _ => "bg-secondary"
+                                        };
                                         <tr>
-                                            <td>@oferta.FechaOferta.ToString("dd/MM/yyyy")</td>
-                                            <td class="fw-bold text-success">RD$ @oferta.Monto.ToString("N2")</td>
-                                            <td>
-                                                @if (oferta.Estado == "Pendiente")
-                                                {
-                                                    <span class="badge bg-warning text-dark">Pendiente</span>
-                                                }
-                                                else if (oferta.Estado == "Aceptada")
-                                                {
-                                                    <span class="badge bg-success">Aceptada</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-danger">Rechazada</span>
-                                                }
-                                            </td>
+                                            <td>@oferta.FechaOferta.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td><strong>$ @oferta.Monto.ToString("N2")</strong></td>
+                                            <td><span class="badge @badgeClass">@oferta.Estado</span></td>
                                         </tr>
                                     }
                                 </tbody>
                             </table>
                         </div>
                     }
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN DERECHA: CHAT CON EL AGENTE -->
-        <div class="col-md-5">
-            <div class="card shadow-sm h-100 d-flex flex-column">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Chat con el Agente</h5>
-                </div>
-
-                <!-- Historial de mensajes -->
-                <div class="card-body bg-light flex-grow-1" id="chatBox" style="max-height: 500px; overflow-y: auto;">
-                    @if (!Model.Mensajes.Any())
-                    {
-                        <div class="text-center text-muted mt-5">
-                            <i class="bi bi-envelope-paper display-4 d-block mb-3"></i>
-                            <p>No hay mensajes. ¡Envía tu primera consulta!</p>
-                        </div>
-                    }
                     else
                     {
-                        @foreach (var msg in Model.Mensajes)
-                        {
-                            bool esMio = msg.EmisorId == currentUserId;
-                            <div class="d-flex mb-3 @(esMio ? "justify-content-end" : "justify-content-start")">
-                                <div class="p-3 rounded-3 shadow-sm @(esMio ? "bg-primary text-white" : "bg-white border")" style="max-width: 85%;">
-                                    <div class="small fw-bold mb-1 opacity-75">
-                                        @(esMio ? "Tú" : "Agente")
-                                    </div>
-                                    <div>@msg.Contenido</div>
-                                    <div class="text-end mt-1" style="font-size: 0.75rem; opacity: 0.8;">
-                                        @msg.FechaEnvio.ToString("hh:mm tt")
-                                    </div>
-                                </div>
-                            </div>
-                        }
+                        <p class="text-muted text-center mb-0">Aún no has realizado ninguna oferta para esta propiedad.</p>
                     }
                 </div>
+            </div>
+        </div>
 
-                <!-- Formulario de envío de mensajes -->
-                @if (Model.Propiedad.Estado == "Disponible")
-                {
-                    <div class="card-footer bg-white border-top-0">
-                        <form asp-action="EnviarMensaje" method="post">
-                            <input type="hidden" name="propiedadId" value="@Model.Propiedad.Id" />
+        <!-- Columna Derecha: Tarjeta del Agente Responsable (Incluye Nombre, Foto, Teléfono y Correo) -->
+        <div class="col-md-4">
+            <div class="card shadow-sm sticky-top" style="top: 2rem;">
+                <div class="card-body text-center">
+                    <h4 class="mb-3">Agente Responsable</h4>
 
-                            <div class="input-group">
-                                <input type="text" name="mensajeTexto" class="form-control" placeholder="Escribe un mensaje..." required
-                                       oninvalid="this.setCustomValidity('Debe escribir un mensaje antes de enviarlo.')"
-                                       oninput="this.setCustomValidity('')" />
-                                <button class="btn btn-primary" type="submit">Enviar</button>
+                    <div class="mb-3">
+                        @if (!string.IsNullOrEmpty(Model.Propiedad.AgenteFotoPerfilUrl))
+                        {
+                            <img src="@Model.Propiedad.AgenteFotoPerfilUrl" class="rounded-circle shadow-sm" style="width: 100px; height: 100px; object-fit: cover;" alt="Foto del Agente" />
+                        }
+                        else
+                        {
+                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                                <i class="fa-solid fa-user"></i>
                             </div>
-                        </form>
+                        }
                     </div>
-                }
-                else
-                {
-                    <div class="card-footer bg-light text-center text-muted">
-                        <small>La propiedad ya no está disponible. Chat deshabilitado.</small>
+
+                    <!-- Nombre del Agente -->
+                    <h5 class="fw-bold mb-1">@Model.Propiedad.AgenteNombre</h5>
+                    <p class="text-muted small mb-3">Agente Inmobiliario Autorizado</p>
+
+                    <hr class="my-3">
+
+                    <div class="text-start px-2">
+                        <!-- Teléfono del Agente -->
+                        <p class="mb-2 text-muted small">
+                            <i class="fa-solid fa-phone text-primary me-2"></i> <strong>Teléfono:</strong> @Model.Propiedad.AgenteTelefono
+                        </p>
+                        <!-- Correo del Agente -->
+                        <p class="mb-3 text-muted small">
+                            <i class="fa-solid fa-envelope text-primary me-2"></i> <strong>Correo:</strong> @Model.Propiedad.AgenteEmail
+                        </p>
                     </div>
-                }
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL PARA NUEVA OFERTA -->
-<div class="modal fade" id="modalOferta" tabindex="-1" aria-labelledby="modalOfertaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="modalOfertaLabel"><i class="bi bi-cash me-2"></i>Enviar Oferta</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form asp-action="EnviarOferta" method="post">
-                <div class="modal-body">
-                    <input type="hidden" name="propiedadId" value="@Model.Propiedad.Id" />
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Precio de la propiedad</label>
-                        <input type="text" class="form-control" value="RD$ @Model.Propiedad.Precio.ToString("N2")" disabled />
+<!-- Modal para Enviar Nueva Oferta -->
+@if (puedeOfertar)
+{
+    <div class="modal fade" id="modalOferta" tabindex="-1" aria-labelledby="modalOfertaLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-controller="Cliente" asp-action="EnviarOferta" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalOfertaLabel">Hacer una Oferta</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Monto Ofertado</label>
-                        <div class="input-group">
-                            <span class="input-group-text">RD$</span>
-                            <input type="number" step="0.01" name="montoOferta" class="form-control" placeholder="Ej. 1500000" required
-                                   oninvalid="this.setCustomValidity('Debe ingresar el monto de la oferta.')"
-                                   oninput="this.setCustomValidity('')" />
+                    <div class="modal-body">
+                        <input type="hidden" name="propiedadId" value="@Model.Propiedad.Id" />
+                        <div class="mb-3">
+                            <label for="montoOferta" class="form-label">Monto ofertado *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" step="0.01" min="1" class="form-control" id="montoOferta" name="montoOferta" placeholder="Ej. 150000" required />
+                            </div>
+                            <div class="form-text">Ingrese un valor numérico mayor que cero.</div>
                         </div>
-                        <div class="form-text text-muted">El monto debe ser numérico y mayor a cero.</div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Enviar oferta</button>
-                </div>
-            </form>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Enviar oferta</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
-
-@section Scripts {
-    <script>
-        // Mantener el scroll del chat siempre abajo al cargar la página
-        document.addEventListener("DOMContentLoaded", function() {
-            var chatBox = document.getElementById('chatBox');
-            if(chatBox) {
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
-        });
-    </script>
 }

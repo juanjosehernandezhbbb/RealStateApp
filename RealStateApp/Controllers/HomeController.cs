@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using RealStateApp.Core.Application.Interfaces.Services;
 using RealStateApp.Core.Application.DTOs.Propiedades;
+using RealStateApp.Core.Application.DTOs.Usuarios;
 using RealStateApp.Core.Application.ViewModels;
 using RealStateApp.Core.Domain.Entities;
 using System.Threading.Tasks;
@@ -107,7 +108,7 @@ public class HomeController : Controller
         var todosLosAgentes = await _userManager.GetUsersInRoleAsync("Agente");
 
         var agentesActivos = todosLosAgentes
-            .Where(a => a.LockoutEnd == null || a.LockoutEnd <= DateTimeOffset.Now)
+            .Where(a => a.EstaActivo)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(nombreFiltro))
@@ -119,13 +120,23 @@ public class HomeController : Controller
             );
         }
 
-        var agentesOrdenados = agentesActivos
+        var agentesDTO = agentesActivos
             .OrderBy(a => a.Nombre)
             .ThenBy(a => a.Apellido)
-            .ToList();
+            .Select(a => new UsuarioDTO
+            {
+                Id = a.Id,
+                Nombre = a.Nombre,
+                Apellido = a.Apellido,
+                Email = a.Email,
+                // Validamos primero Telefono y como respaldo PhoneNumber
+                Telefono = !string.IsNullOrEmpty(a.Telefono) ? a.Telefono : (!string.IsNullOrEmpty(a.PhoneNumber) ? a.PhoneNumber : "No registrado"),
+                FotoPerfilUrl = a.FotoPerfilUrl,
+                EstaActivo = a.EstaActivo
+            }).ToList();
 
         ViewBag.NombreFiltro = nombreFiltro;
-        return View(agentesOrdenados);
+        return View(agentesDTO);
     }
 
     // ==========================================
@@ -137,7 +148,8 @@ public class HomeController : Controller
     {
         var agente = await _userManager.FindByIdAsync(id);
 
-        if (agente == null || (agente.LockoutEnd != null && agente.LockoutEnd > DateTimeOffset.Now))
+        // Validar que el agente exista y esté activo
+        if (agente == null || !agente.EstaActivo)
         {
             TempData["Error"] = "El agente solicitado no existe o no se encuentra disponible.";
             return RedirectToAction(nameof(Agentes));

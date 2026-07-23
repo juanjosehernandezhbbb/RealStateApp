@@ -55,12 +55,13 @@ public class AgenteController : Controller
     // ==========================================
     // 1. LISTADO PÚBLICO DE AGENTES (Visible sin login)
     // ==========================================
-    [AllowAnonymous]
+    [Authorize(Roles = "Agente")]
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        var agentes = await _userManager.GetUsersInRoleAsync("Agente");
-        return View(agentes);
+        string agenteId = GetAgenteId();
+        var propiedades = await _propiedadService.GetPropiedadesByAgenteAsync(agenteId);
+        return View(propiedades); // Ahora coincide exactamente con IEnumerable<PropiedadDTO>
     }
 
     // ==========================================

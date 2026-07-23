@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using RealStateApp.Core.Application.DTOs.Favoritos;
 using RealStateApp.Core.Application.DTOs.Mensajes;
 using RealStateApp.Core.Application.DTOs.Ofertas;
+using RealStateApp.Core.Application.DTOs.Usuarios;
 using RealStateApp.Core.Application.Interfaces.Services;
 using RealStateApp.Core.Application.Services;
 using RealStateApp.Core.Application.ViewModels.Cliente;
+using RealStateApp.Core.Domain.Entities;
 using System.Security.Claims;
 
 namespace RealStateApp.WebApp.Controllers
@@ -20,6 +23,7 @@ namespace RealStateApp.WebApp.Controllers
         private readonly IOfertaService _ofertaService;
         private readonly IMensajeService _mensajeService;
         private readonly IAccountService _accountService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public ClienteController(
             IPropiedadService propiedadService,
@@ -27,7 +31,8 @@ namespace RealStateApp.WebApp.Controllers
             ITipoPropiedadService tipoPropiedadService,
             IOfertaService ofertaService,
             IMensajeService mensajeService,
-            IAccountService accountService)
+            IAccountService accountService,
+            UserManager<ApplicationUser> userManager)
         {
             _propiedadService = propiedadService;
             _favoritoService = favoritoService;
@@ -35,6 +40,7 @@ namespace RealStateApp.WebApp.Controllers
             _ofertaService = ofertaService;
             _mensajeService = mensajeService;
             _accountService = accountService;
+            _userManager = userManager;
         }
 
         // 1. HOME DEL CLIENTE CON FILTROS
@@ -258,26 +264,40 @@ namespace RealStateApp.WebApp.Controllers
         // LISTADO DE AGENTES (Menú del Cliente)
         // ==========================================
         [HttpGet]
-        public async Task<IActionResult> Agentes(string? nombreFiltro)
+        public async Task<IActionResult> Agentes(string nombreFiltro)
         {
-            // Obtener todos los usuarios del sistema
-            var todosLosUsuarios = await _accountService.GetAllUsersAsync();
+            var todosLosAgentes = await _userManager.GetUsersInRoleAsync("Agente");
 
-            var agentes = todosLosUsuarios
-                .Where(u => u.Roles != null && u.Roles.Contains("Agente"))
-                .ToList();
+            // FILTRAR ESTRICTAMENTE LOS ACTIVOS AQUÍ TAMBIÉN
+            var agentesActivos = todosLosAgentes
+                .Where(a => a.EstaActivo)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(nombreFiltro))
             {
-                agentes = agentes.Where(a =>
-                    (a.Nombre != null && a.Nombre.Contains(nombreFiltro, StringComparison.OrdinalIgnoreCase)) ||
-                    (a.Apellido != null && a.Apellido.Contains(nombreFiltro, StringComparison.OrdinalIgnoreCase))
-                ).ToList();
+                agentesActivos = agentesActivos.Where(a =>
+                    (!string.IsNullOrEmpty(a.Nombre) && a.Nombre.Contains(nombreFiltro, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(a.Apellido) && a.Apellido.Contains(nombreFiltro, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(a.UserName) && a.UserName.Contains(nombreFiltro, StringComparison.OrdinalIgnoreCase))
+                );
             }
 
-            ViewBag.NombreFiltro = nombreFiltro;
+            var agentesDTO = agentesActivos
+                .OrderBy(a => a.Nombre)
+                .ThenBy(a => a.Apellido)
+                .Select(a => new UsuarioDTO
+                {
+                    Id = a.Id,
+                    Nombre = a.Nombre,
+                    Apellido = a.Apellido,
+                    Email = a.Email,
+                    Telefono = !string.IsNullOrEmpty(a.Telefono) ? a.Telefono : (!string.IsNullOrEmpty(a.PhoneNumber) ? a.PhoneNumber : "No registrado"),
+                    FotoPerfilUrl = a.FotoPerfilUrl,
+                    EstaActivo = a.EstaActivo
+                }).ToList();
 
-            return View(agentes);
+            ViewBag.NombreFiltro = nombreFiltro;
+            return View(agentesDTO);
         }
     }
 }

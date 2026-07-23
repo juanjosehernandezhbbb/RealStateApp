@@ -1,5 +1,4 @@
 ﻿@model IEnumerable<RealStateApp.Core.Application.DTOs.Usuarios.UsuarioDTO>
-
 @{
     ViewData["Title"] = "Agentes Inmobiliarios";
 }
@@ -43,7 +42,7 @@
             {
                 <div class="col">
                     <div class="card h-100 shadow-sm border-0 rounded-3">
-                        <div class="card-body text-center p-4">
+                        <div class="card-body text-center p-4 d-flex flex-column">
                             <!-- Foto de Perfil o Inicial -->
                             <div class="mb-3">
                                 @if (!string.IsNullOrEmpty(agente.FotoPerfilUrl))
@@ -66,9 +65,16 @@
 
                             <hr class="text-muted opacity-25">
 
-                            <div class="text-start small text-secondary mb-3">
+                            <div class="text-start small text-secondary mb-4">
                                 <p class="mb-2"><i class="bi bi-envelope-fill text-primary me-2"></i> <strong>Correo:</strong> @agente.Email</p>
                                 <p class="mb-0"><i class="bi bi-telephone-fill text-primary me-2"></i> <strong>Teléfono:</strong> @(string.IsNullOrEmpty(agente.Telefono) ? "No registrado" : agente.Telefono)</p>
+                            </div>
+
+                            <!-- Botón para ver propiedades -->
+                            <div class="mt-auto">
+                                <a asp-controller="Home" asp-action="PropiedadesPorAgente" asp-route-id="@agente.Id" class="btn btn-outline-primary w-100 fw-semibold">
+                                    Ver Propiedades
+                                </a>
                             </div>
                         </div>
                     </div>

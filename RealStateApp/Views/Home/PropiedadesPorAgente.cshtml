@@ -23,7 +23,12 @@
         <div class="col">
             <h2 class="fw-bold text-dark mb-1">@agente?.Nombre @agente?.Apellido</h2>
             <p class="text-muted mb-2"><i class="bi bi-envelope-fill me-1"></i> @agente?.Email</p>
-            <p class="text-muted mb-0"><i class="bi bi-telephone-fill me-1"></i> @(agente?.PhoneNumber ?? "No disponible")</p>
+            @if (agente != null)
+            {
+                <p class="mb-0">
+                    @(agente.EstaActivo ? "Agente Activo" : "No disponible")
+                </p>
+            }
         </div>
     </div>
 
@@ -68,9 +73,18 @@
                             </div>
                         </div>
                         <div class="card-footer bg-white border-0 pb-3">
-                            <a asp-controller="Propiedad" asp-action="Detalle" asp-route-id="@propiedad.Id" class="btn btn-primary w-100">
-                                Ver Detalle
-                            </a>
+                            @if (User.IsInRole("Cliente"))
+                            {
+                                <a asp-controller="Cliente" asp-action="Details" asp-route-id="@propiedad.Id" class="btn btn-primary w-100">
+                                    Ver Detalle
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Propiedad" asp-action="Detalle" asp-route-id="@propiedad.Id" class="btn btn-primary w-100">
+                                    Ver Detalle
+                                </a>
+                            }
                         </div>
                     </div>
                 </div>

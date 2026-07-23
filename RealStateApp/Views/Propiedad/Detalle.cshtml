@@ -4,74 +4,123 @@
     ViewData["Title"] = "Detalle de Propiedad";
 }
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
     <div class="row">
         <div class="col-md-8">
-            <h2>@Model.TipoPropiedadNombre - @Model.TipoVentaNombre</h2>
+            <h2 class="fw-bold text-dark">@Model.TipoPropiedadNombre - @Model.TipoVentaNombre</h2>
             <p class="text-muted"><i class="bi bi-geo-alt"></i> Código: @Model.Codigo</p>
 
-            <!-- Carrusel o Galería de Imágenes -->
+            <!-- Carrusel / Slider de Imágenes -->
             @if (Model.ImagenesUrls != null && Model.ImagenesUrls.Any())
             {
-                <div id="propertyCarousel" class="carousel slide mb-4 shadow-sm rounded overflow-hidden" data-bs-ride="carousel">
+                <div id="propertyCarousel" class="carousel slide mb-4 shadow-sm rounded overflow-hidden bg-dark" data-bs-ride="carousel">
+
+                    <!-- Indicadores (Puntitos inferiores) -->
+                    @if (Model.ImagenesUrls.Count > 1)
+                    {
+                        <div class="carousel-indicators">
+                            @for (int i = 0; i < Model.ImagenesUrls.Count; i++)
+                            {
+                                <button type="button" data-bs-target="#propertyCarousel" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")" aria-current="@(i == 0 ? "true" : "false")" aria-label="Slide @(i + 1)"></button>
+                            }
+                        </div>
+                    }
+
                     <div class="carousel-inner">
                         @for (int i = 0; i < Model.ImagenesUrls.Count; i++)
                         {
                             <div class="carousel-item @(i == 0 ? "active" : "")">
-                                <img src="@Model.ImagenesUrls[i]" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="Imagen de la propiedad">
+                                <img src="@Model.ImagenesUrls[i]" class="d-block w-100" style="height: 450px; object-fit: cover;" alt="Imagen de la propiedad">
                             </div>
                         }
                     </div>
+
+                    <!-- Controles Siguiente / Anterior con fondo circular oscuro para contraste -->
                     @if (Model.ImagenesUrls.Count > 1)
                     {
                         <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
-                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="p-2 rounded-circle bg-black bg-opacity-50 d-flex align-items-center justify-content-center shadow-sm" style="width: 45px; height: 45px;">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            </span>
                             <span class="visually-hidden">Anterior</span>
                         </button>
                         <button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel" data-bs-slide="next">
-                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="p-2 rounded-circle bg-black bg-opacity-50 d-flex align-items-center justify-content-center shadow-sm" style="width: 45px; height: 45px;">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            </span>
                             <span class="visually-hidden">Siguiente</span>
                         </button>
                     }
                 </div>
             }
+            else
+            {
+                <div class="mb-4 text-center bg-light p-5 rounded border">
+                    <p class="text-muted m-0">No hay imágenes disponibles para esta propiedad.</p>
+                </div>
+            }
 
-            <div class="card mb-4 shadow-sm">
+            <div class="card mb-4 shadow-sm border-0">
                 <div class="card-body">
-                    <h4>Descripción</h4>
-                    <p>@Model.Descripcion</p>
+                    <h4 class="fw-bold mb-3">Descripción</h4>
+                    <p class="text-secondary" style="white-space: pre-line;">@Model.Descripcion</p>
                 </div>
             </div>
 
-            <div class="card mb-4 shadow-sm">
+            <div class="card mb-4 shadow-sm border-0">
                 <div class="card-body">
-                    <h4>Características</h4>
+                    <h4 class="fw-bold mb-3">Características</h4>
                     <ul class="list-group list-group-flush">
-                        <li class="list-group-item"><strong>Precio:</strong> $ @Model.Precio.ToString("N2")</li>
-                        <li class="list-group-item"><strong>Tamaño:</strong> @Model.Tamano m²</li>
-                        <li class="list-group-item"><strong>Habitaciones:</strong> @Model.CantidadHabitaciones</li>
-                        <li class="list-group-item"><strong>Baños:</strong> @Model.CantidadBanos</li>
-                        <li class="list-group-item"><strong>Estado:</strong> @Model.Estado</li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-tag-fill text-primary me-2"></i> Precio</span>
+                            <strong class="text-success">$ @Model.Precio.ToString("N2")</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-arrows-fullscreen text-primary me-2"></i> Tamaño</span>
+                            <strong>@Model.Tamano m²</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-door-open-fill text-primary me-2"></i> Habitaciones</span>
+                            <strong>@Model.CantidadHabitaciones</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-droplet-fill text-primary me-2"></i> Baños</span>
+                            <strong>@Model.CantidadBanos</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-info-circle-fill text-primary me-2"></i> Estado</span>
+                            <span class="badge bg-info text-dark">@Model.Estado</span>
+                        </li>
                     </ul>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card shadow-sm sticky-top" style="top: 2rem;">
-                <div class="card-body text-center">
-                    <h4>Agente Responsable</h4>
-                    <p class="fw-bold">@Model.AgenteNombre</p>
-                    <p class="text-muted">¿Te interesa esta propiedad?</p>
+            <div class="card shadow-sm border-0 sticky-top" style="top: 2rem;">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="bi bi-person-circle text-secondary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4 class="fw-bold">Agente Responsable</h4>
+                    <p class="text-primary fw-bold fs-5">@Model.AgenteNombre</p>
+                    <hr>
+                    <p class="text-muted small">¿Te interesa esta propiedad? Inicia sesión para interactuar directamente con el agente.</p>
 
                     @if (User.Identity.IsAuthenticated)
                     {
-                        <a asp-controller="Cliente" asp-action="Chat" asp-route-propiedadId="@Model.Id" class="btn btn-success w-100 mb-2">Contactar al Agente</a>
-                        <a asp-controller="Cliente" asp-action="HacerOferta" asp-route-propiedadId="@Model.Id" class="btn btn-outline-primary w-100">Hacer una Oferta</a>
+                        <a asp-controller="Cliente" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-success w-100 mb-2 fw-bold">
+                            <i class="bi bi-chat-dots-fill me-1"></i> Contactar al Agente / Chat
+                        </a>
+                        <a asp-controller="Cliente" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-primary w-100 fw-bold">
+                            <i class="bi bi-cash-stack me-1"></i> Hacer una Oferta
+                        </a>
                     }
                     else
                     {
-                        <a asp-controller="Account" asp-action="Login" class="btn btn-primary w-100">Inicia sesión para contactar</a>
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-primary w-100 fw-bold py-2">
+                            Inicia sesión para contactar
+                        </a>
                     }
                 </div>
             </div>

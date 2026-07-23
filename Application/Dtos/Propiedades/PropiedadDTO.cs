@@ -13,6 +13,9 @@ namespace RealStateApp.Core.Application.DTOs.Propiedades
         public string TipoVentaNombre { get; set; } = null!;
         public string AgenteId { get; set; } = null!;
         public string AgenteNombre { get; set; } = null!;
+        public string AgenteTelefono { get; set; } = null!;
+        public string AgenteEmail { get; set; } = null!;
+        public string AgenteFotoPerfilUrl { get; set; } = null!;
         public decimal Precio { get; set; }
         public string Descripcion { get; set; } = null!;
         public decimal Tamano { get; set; }
@@ -23,9 +26,7 @@ namespace RealStateApp.Core.Application.DTOs.Propiedades
 
         public List<string> ImagenesUrls { get; set; } = new();
         public List<string> Mejoras { get; set; } = new();
-
         public List<int> MejorasIds { get; set; } = new List<int>();
-
         public bool EsFavorito { get; set; }
     }
 }

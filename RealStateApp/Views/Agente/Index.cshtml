@@ -59,8 +59,12 @@
                             <p class="card-text small text-truncate">@item.Descripcion</p>
 
                             <ul class="list-unstyled small text-muted mb-3">
-                                <li> habitaciones |  baños |  mts²</li>
-                                <li><strong>Operación:</strong> @item.TipoVentaNombre</li>
+                                <li>
+                                    <i class="fa-solid fa-bed me-1"></i> @item.CantidadHabitaciones hab. |
+                                    <i class="fa-solid fa-bath me-1"></i> @item.CantidadBanos baños |
+                                    <i class="fa-solid fa-ruler-combined me-1"></i> @item.Tamano mts²
+                                </li>
+                                <li class="mt-1"><strong>Operación:</strong> @item.TipoVentaNombre</li>
                             </ul>
 
                             <a asp-action="Detalle" asp-route-id="@item.Id" class="btn btn-outline-primary w-100">Ver Detalle y Ofertas</a>

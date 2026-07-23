@@ -7,7 +7,9 @@ using RealStateApp.Persistance.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+// Habilitar compilación en tiempo de ejecución para vistas Razor
+builder.Services.AddControllersWithViews()
+    .AddRazorRuntimeCompilation();
 
 // Registro de capas
 builder.Services.AddPersistenceInfrastructure(builder.Configuration);
